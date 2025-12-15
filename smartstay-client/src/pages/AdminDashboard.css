@@ -1,0 +1,287 @@
+/* ================= Admin Dashboard Full CSS ================= */
+
+.admin-dashboard-page {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(to bottom right, #1f2937, #111827);
+  color: #f9fafb;
+}
+
+/* ---------------- Sidebar ---------------- */
+.sidebar {
+  width: 18rem;
+  background-color: #111827;
+  color: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.sidebar-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.sidebar-header .avatar {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  background: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin: 0 auto 0.5rem;
+  cursor: pointer;
+}
+.sidebar-header h2 {
+  margin: 0.25rem 0;
+  font-size: 1.2rem;
+}
+.sidebar-header p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.sidebar-nav button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: background 0.3s, transform 0.2s;
+}
+.sidebar-nav button.active,
+.sidebar-nav button:hover {
+  background-color: #2563eb;
+  color: #fff;
+  transform: translateX(4px);
+}
+
+/* ---------------- Main Content ---------------- */
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+/* ---------------- Tab Bar ---------------- */
+.tab-bar {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+}
+.tab-bar button {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  color: #cbd5e1;
+  flex-shrink: 0;
+}
+.tab-bar button.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: rgba(37, 99, 235, 0.15);
+}
+
+/* ---------------- Cards Grid ---------------- */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+/* Dashboard Cards */
+.card {
+  background-color: #1f2937;
+  color: #f9fafb;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+}
+
+/* Chart Canvas Styling */
+.card canvas {
+  border-radius: 0.75rem;
+  background-color: #111827;
+  padding: 0.5rem;
+}
+
+/* Chart View Button */
+.chart-view-btn {
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: #4f46e5;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  transition: background 0.3s;
+}
+.chart-view-btn:hover {
+  background: #3730a3;
+}
+
+/* ---------------- Booking / Info Cards ---------------- */
+.booking-card {
+  background-color: #374151;
+  color: #f9fafb;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.booking-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+}
+.booking-actions button {
+  margin-right: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+}
+.booking-actions button:hover { background: #1e40af; }
+
+/* ---------------- Profile ---------------- */
+.profile-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: flex-start;
+}
+.avatar-section {
+  min-width: 180px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.profile-avatar {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg,#374151,#4b5563);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+  border: 2px solid #2563eb;
+  box-shadow: 0 6px 18px rgba(37,99,235,0.25);
+  cursor: pointer;
+}
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.upload-hint { font-size: 0.8rem; color: #9ca3af; text-align: center; }
+.profile-form { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+.profile-form input { padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid #4b5563; outline: none; background: #1f2937; color: #f9fafb; }
+.profile-form button { padding: 0.75rem; border-radius: 0.5rem; border: none; background: #2563eb; color: #fff; font-weight: 600; cursor: pointer; }
+.profile-form button:hover { background: #1d4ed8; }
+
+/* ---------------- Chart Modal ---------------- */
+.chart-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.chart-modal-content {
+  background-color: #1f2937;
+  padding: 2rem;
+  border-radius: 1rem;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  color: #f9fafb;
+}
+
+.chart-modal-content h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.chart-modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.chart-modal-actions button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.3s;
+}
+
+.chart-modal-actions button:hover {
+  background: #1d4ed8;
+}
+
+/* ---------------- Mobile Responsive ---------------- */
+@media (max-width: 768px) {
+  .admin-dashboard-page { flex-direction: column; }
+  .sidebar { width: 100%; flex-direction: column; align-items: center; padding: 1rem; gap: 1rem; }
+  .sidebar-nav { flex-direction: row; justify-content: space-around; width: 100%; }
+  .sidebar-nav button { font-size: 0.7rem; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.25rem; }
+  .sidebar-nav .nav-label { display: block; }
+  .cards-grid { grid-template-columns: 1fr; }
+  .tab-bar { flex-wrap: nowrap; overflow-x: auto; }
+  .profile-grid { flex-direction: column; align-items: center; gap: 1rem; }
+  .avatar-section { width: 100%; align-items: center; }
+  .profile-form { width: 100%; }
+}
