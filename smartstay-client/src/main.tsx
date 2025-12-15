@@ -4,6 +4,8 @@ import './index.css'
 import App from './App.tsx'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import GuestAccountCreation from './pages/GuestAccountCreation.tsx'
+import GuestLogin from './pages/GuestLogin.tsx'
+import GuestAuthSystem from './pages/GuestAuthSystem.tsx'
 
 
 const routes = createBrowserRouter([
@@ -15,10 +17,9 @@ const routes = createBrowserRouter([
     element: <App />
   },
 
-
   {
-    path: "/guestregistration",
-    element: <GuestAccountCreation/>
+    path: "/guestauth",
+    element: <GuestAuthSystem/>
   }
 ])
 
