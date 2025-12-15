@@ -6,6 +6,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import GuestAccountCreation from './pages/GuestAccountCreation.tsx'
 import GuestLogin from './pages/GuestLogin.tsx'
 import GuestAuthSystem from './pages/GuestAuthSystem.tsx'
+import AdminAuthSystem from './pages/AdminAuth.tsx'
 
 
 const routes = createBrowserRouter([
@@ -20,6 +21,11 @@ const routes = createBrowserRouter([
   {
     path: "/guestauth",
     element: <GuestAuthSystem/>
+  },
+
+  {
+    path: "/adminauth",
+    element: <AdminAuthSystem/>
   }
 ])
 

@@ -1,0 +1,268 @@
+/* General page background */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  background: linear-gradient(to bottom right, #f3f4f6, #e0f2fe); /* lighter, staff-friendly gradient */
+  font-family: 'Arial', sans-serif;
+}
+
+/* Card container */
+.auth-card {
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+  max-width: 28rem;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Header gradient */
+.auth-header {
+  background: linear-gradient(to right, #4338ca, #2563eb); /* different blue gradient */
+  color: #ffffff;
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.auth-header h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+  color: #c7d2fe;
+  margin: 0;
+}
+
+/* Tabs */
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.auth-tab {
+  flex: 1;
+  text-align: center;
+  padding: 1rem 0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.3s, border-bottom 0.3s;
+}
+
+.auth-tab.active {
+  color: #4338ca;
+  border-bottom: 2px solid #4338ca;
+}
+
+.auth-tab.inactive {
+  color: #6b7280;
+}
+
+.auth-tab.inactive:hover {
+  color: #1e40af;
+}
+
+/* Form container */
+.auth-form {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Labels */
+.auth-form label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+/* Input group */
+.input-group {
+  position: relative;
+  width: 100%;
+}
+
+/* Icons inside input */
+.input-group svg {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+/* Input fields */
+.auth-input {
+  width: 100%;
+  padding: 0.75rem 2.5rem 0.75rem 2.5rem; /* space for icon and toggler */
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  box-sizing: border-box;
+  background-color: #f9fafb; /* light background for inputs */
+}
+
+.auth-input:focus {
+  border-color: #4338ca;
+  box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.3);
+}
+
+/* Select dropdown */
+.auth-input[type="select"], select.auth-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: #f9fafb;
+  padding-right: 2rem;
+  cursor: pointer;
+}
+
+/* Password toggle button */
+.toggle-password {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.toggle-password:hover {
+  color: #4338ca;
+}
+
+/* Select field with icon */
+.input-group select.auth-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-left: 2.5rem; /* space for the icon */
+  padding-right: 2rem;  /* space for the arrow */
+  background-color: #f9fafb;
+  cursor: pointer;
+}
+
+/* Add a custom arrow to select (optional) */
+.input-group select.auth-input::-ms-expand {
+  display: none;
+}
+
+.input-group select.auth-input::after {
+  content: '▼';
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+/* Make sure the icon on left aligns like other inputs */
+.input-group select.auth-input + svg {
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  position: absolute;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+/* Messages */
+.message {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.message.success {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.message.error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Buttons */
+.auth-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  border: none;
+  color: #ffffff;
+  background-color: #4338ca;
+}
+
+.auth-btn:hover {
+  background-color: #3730a3;
+}
+
+.auth-btn:disabled {
+  background-color: #a5b4fc;
+  cursor: not-allowed;
+}
+
+/* Logged-in card */
+.logged-in-card {
+  background-color: #f0f9ff;
+  border-radius: 1.5rem;
+  box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+  max-width: 42rem;
+  width: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logged-in-card h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #111827;
+}
+
+.logged-in-card p {
+  color: #1e3a8a;
+}
+
+/* Grid for first/last name */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
