@@ -9,6 +9,7 @@ import GuestAuthSystem from './pages/GuestAuthSystem.tsx'
 import AdminAuthSystem from './pages/AdminAuth.tsx'
 import GuestDashboard from './pages/GuestDashboard.tsx'
 import AdminDashboard from './pages/AdminDashboard.tsx'
+import StaffDashboard from './pages/StaffDashboard.tsx'
 
 
 const routes = createBrowserRouter([
@@ -38,6 +39,11 @@ const routes = createBrowserRouter([
   {
     path: "/admindashboard",
     element: <AdminDashboard/>
+  },
+
+  {
+    path: "/staffdashboard",
+    element: <StaffDashboard/>
   }
 ])
 
