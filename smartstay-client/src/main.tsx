@@ -10,6 +10,7 @@ import AdminAuthSystem from './pages/AdminAuth.tsx'
 import GuestDashboard from './pages/GuestDashboard.tsx'
 import AdminDashboard from './pages/AdminDashboard.tsx'
 import StaffDashboard from './pages/StaffDashboard.tsx'
+import ReceptionistDashboard from './pages/ReceptionistDashboard.tsx'
 
 
 const routes = createBrowserRouter([
@@ -44,6 +45,11 @@ const routes = createBrowserRouter([
   {
     path: "/staffdashboard",
     element: <StaffDashboard/>
+  },
+
+  {
+    path: "/receptionistdashboard",
+    element: <ReceptionistDashboard/>
   }
 ])
 

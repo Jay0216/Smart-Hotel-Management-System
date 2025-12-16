@@ -1,0 +1,251 @@
+/* ReceptionistDashboard.css */
+.reception-dashboard-page {
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #0f172a, #020617);
+  color: #f8fafc;
+  font-family: Arial, sans-serif;
+}
+
+.sidebar {
+  width: 18rem;
+  background: #020617;
+  padding: 1rem;
+}
+
+.sidebar-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.avatar {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-nav button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem;
+  background: transparent;
+  border: none;
+  color: #cbd5f5;
+  border-radius: 0.6rem;
+}
+
+.sidebar-nav button.active,
+.sidebar-nav button:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+.main-content {
+  flex: 1;
+  padding: 1.5rem;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.tab-bar button {
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.6rem;
+  background: transparent;
+  border: none;
+  color: #cbd5f5;
+}
+
+.tab-bar button.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.cards-grid,
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+}
+
+.card,
+.room-card,
+.booking-card,
+.bill-card {
+  background: #1e293b;
+  padding: 1rem;
+  border-radius: 1rem;
+}
+
+.walkin-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.form-card {
+  background: #1e293b;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-card.wide {
+  width: 100%;
+  margin-top: 130px;
+  max-width: 640px;
+}
+
+.form-card input,
+.form-card select,
+.bill-card select,
+.profile-form input {
+  padding: 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid #334155;
+  background: #020617;
+  color: #fff;
+}
+
+.form-card button,
+.bill-card button,
+.profile-form button {
+  padding: 0.7rem;
+  background: #2563eb;
+  border: none;
+  border-radius: 0.5rem;
+  color: #fff;
+}
+
+.booking-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.booking-actions .checkout {
+  background: #dc2626;
+}
+
+.bill-card .total {
+  color: #22c55e;
+  font-weight: bold;
+}
+
+.profile-grid {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.profile-avatar {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  background: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #2563eb;
+}
+
+/* Billing Section Spacing Fix */
+.billing-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.2rem;
+}
+
+.bill-card {
+  background: #1e293b;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bill-info p {
+  margin: 0.15rem 0;
+}
+
+.bill-card .total {
+  margin-top: 0.5rem;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.bill-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.bill-actions select {
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  border: 1px solid #334155;
+  background: #020617;
+  color: #f8fafc;
+}
+
+.bill-actions button {
+  padding: 0.7rem;
+  border-radius: 0.6rem;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.bill-actions button:hover {
+  background: #1d4ed8;
+}
+
+
+@media (max-width: 768px) {
+  .reception-dashboard-page {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .profile-grid {
+    flex-direction: column;
+  }
+
+  .form-card.wide {
+    max-width: 100%;
+  }
+}
