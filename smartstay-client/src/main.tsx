@@ -12,6 +12,9 @@ import AdminDashboard from './pages/AdminDashboard.tsx'
 import StaffDashboard from './pages/StaffDashboard.tsx'
 import ReceptionistDashboard from './pages/ReceptionistDashboard.tsx'
 
+import { Provider } from 'react-redux';
+// @ts-ignore
+import { store } from './redux/store.js'
 
 const routes = createBrowserRouter([
 
@@ -55,6 +58,8 @@ const routes = createBrowserRouter([
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={routes}/>
+    <Provider store={store}>
+      <RouterProvider router={routes} />
+    </Provider>
   </StrictMode>,
 )
