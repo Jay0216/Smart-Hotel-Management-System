@@ -1,12 +1,25 @@
-const express = require("express")
-const server = express()
-const PORT = 3000
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import guestRoutes from './routes/guest.routes.js';
 
+dotenv.config();
 
-server.get("/", (request, response) =>{
-    response.send("SmartStay Hotel Server side")
-})
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, () => {
-    console.log("Server is running at 3000 port")
-})
+/* Middleware */
+app.use(cors());
+app.use(express.json());
+
+/* Routes */
+app.use('/api/guests', guestRoutes);
+
+app.get('/', (req, res) => {
+  res.send('SmartStay Hotel Server side');
+});
+
+/* Start Server */
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
