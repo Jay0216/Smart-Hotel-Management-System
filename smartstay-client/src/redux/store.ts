@@ -1,10 +1,16 @@
 // src/redux/store.ts
 import { configureStore } from '@reduxjs/toolkit';
 import guestReducer from './guestSlice';
+import adminReducer from './adminSlice';
+import receptionistReducer from './receptionSlice';
+import staffReducer from './staffSlice';
 
 export const store = configureStore({
   reducer: {
     guest: guestReducer,
+    admin: adminReducer,
+    receptionist: receptionistReducer,
+    staff: staffReducer,
   },
 });
 

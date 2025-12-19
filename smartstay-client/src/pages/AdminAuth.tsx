@@ -1,46 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, User, UserStar, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState, AppDispatch } from '../redux/store';
+import { adminRegisterThunk, adminLoginThunk } from '../redux/adminSlice';
+import { receptionistRegisterThunk, receptionistLoginThunk } from '../redux/receptionSlice';
+import { staffRegisterThunk, staffLoginThunk } from '../redux/staffSlice';
 import './AdminAuth.css';
+import { useNavigate } from 'react-router-dom';
 
-type UserRole = 'receptionist' | 'housekeeping' | 'admin';
-
-interface User {
-  id: string;
-  email: string;
-  password: string;
-  role: UserRole;
-  firstName: string;
-  lastName: string;
-  createdAt: string;
-}
-
-interface AuthState {
-  isAuthenticated: boolean;
-  currentUser: User | null;
-  users: User[];
-  loginAttempts: Array<{
-    email: string;
-    timestamp: string;
-    success: boolean;
-  }>;
-}
+type UserRole = 'admin' | 'receptionist' | 'staff';
 
 const AdminAuthSystem: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+
+  const adminState = useSelector((state: RootState) => state.admin);
+  const receptionistState = useSelector((state: RootState) => state.receptionist);
+  const staffState = useSelector((state: RootState) => state.staff);
+
+  const navigate = useNavigate();
+
   const [view, setView] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    currentUser: null,
-    users: [],
-    loginAttempts: []
-  });
-
+  // Login/Register fields
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [loginRole, setLoginRole] = useState<UserRole>('admin');
 
   const [regFirstName, setRegFirstName] = useState('');
   const [regLastName, setRegLastName] = useState('');
@@ -51,106 +38,126 @@ const AdminAuthSystem: React.FC = () => {
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePassword = (password: string) => password.length >= 8;
-  const checkDuplicateEmail = (email: string) =>
-    authState.users.some(u => u.email.toLowerCase() === email.toLowerCase());
 
-  const handleRegister = () => {
-    setLoading(true);
+  // === Registration handler ===
+  const handleRegister = async () => {
     setMessage(null);
 
-    setTimeout(() => {
-      if (!regFirstName.trim() || !regLastName.trim()) {
-        setMessage({ type: 'error', text: 'Please enter first and last name' });
-        setLoading(false);
-        return;
-      }
-      if (!validateEmail(regEmail)) {
-        setMessage({ type: 'error', text: 'Invalid email' });
-        setLoading(false);
-        return;
-      }
-      if (checkDuplicateEmail(regEmail)) {
-        setMessage({ type: 'error', text: 'Email already exists' });
-        setLoading(false);
-        return;
-      }
-      if (!validatePassword(regPassword)) {
-        setMessage({ type: 'error', text: 'Password must be at least 8 characters' });
-        setLoading(false);
-        return;
-      }
-      if (regPassword !== regConfirmPassword) {
-        setMessage({ type: 'error', text: 'Passwords do not match' });
-        setLoading(false);
-        return;
-      }
+    if (!regFirstName || !regLastName) return setMessage({ type: 'error', text: 'Enter first and last name' });
+    if (!validateEmail(regEmail)) return setMessage({ type: 'error', text: 'Invalid email' });
+    if (!validatePassword(regPassword)) return setMessage({ type: 'error', text: 'Password must be at least 8 characters' });
+    if (regPassword !== regConfirmPassword) return setMessage({ type: 'error', text: 'Passwords do not match' });
 
-      const newUser: User = {
-        id: `admin_${Date.now()}`,
-        email: regEmail.toLowerCase(),
-        password: regPassword,
-        role: regRole,
-        firstName: regFirstName,
-        lastName: regLastName,
-        createdAt: new Date().toISOString()
-      };
-
-      setAuthState(prev => ({ ...prev, users: [...prev.users, newUser] }));
-
-      setMessage({ type: 'success', text: 'Account created successfully!' });
-      setRegFirstName('');
-      setRegLastName('');
-      setRegEmail('');
-      setRegPassword('');
-      setRegConfirmPassword('');
-      setRegRole('receptionist');
-      setLoading(false);
-
-      setTimeout(() => {
-        setView('login');
-        setMessage(null);
-      }, 1500);
-    }, 500);
-  };
-
-  const handleLogin = () => {
-    setLoading(true);
-    setMessage(null);
-
-    setTimeout(() => {
-      const user = authState.users.find(
-        u => u.email.toLowerCase() === loginEmail.toLowerCase() && u.password === loginPassword
-      );
-      setAuthState(prev => ({
-        ...prev,
-        loginAttempts: [...prev.loginAttempts, { email: loginEmail, timestamp: new Date().toISOString(), success: !!user }]
-      }));
-
-      if (user) {
-        setAuthState(prev => ({ ...prev, isAuthenticated: true, currentUser: user }));
-        setMessage({ type: 'success', text: `Welcome back, ${user.firstName}!` });
+    try {
+      let resultAction;
+      if (regRole === 'admin') {
+        resultAction = await dispatch(adminRegisterThunk({ firstName: regFirstName, lastName: regLastName, email: regEmail, password: regPassword }));
+      } else if (regRole === 'receptionist') {
+        resultAction = await dispatch(receptionistRegisterThunk({ firstName: regFirstName, lastName: regLastName, email: regEmail, password: regPassword }));
       } else {
-        setMessage({ type: 'error', text: 'Invalid email or password' });
+        resultAction = await dispatch(staffRegisterThunk({ firstName: regFirstName, lastName: regLastName, email: regEmail, password: regPassword }));
       }
-      setLoading(false);
-    }, 500);
+
+      if ((resultAction as any).type.endsWith('fulfilled')) {
+        setMessage({ type: 'success', text: 'Account created successfully! Please login.' });
+        setRegFirstName(''); setRegLastName(''); setRegEmail(''); setRegPassword(''); setRegConfirmPassword(''); setRegRole('receptionist');
+        
+        setTimeout(() => {
+         setView('login');
+         setMessage(null);
+        }, 2000);
+      } else {
+        const errorMsg = (resultAction as any).payload || 'Registration failed';
+        setMessage({ type: 'error', text: errorMsg });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Registration failed' });
+    }
   };
 
-  if (authState.isAuthenticated && authState.currentUser) {
-    return (
-      <div className="auth-page">
-        <div className="logged-in-card" style={{ background: '#f0f9ff' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: '#dbeafe', margin: '0 auto 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle style={{ width: '2.5rem', height: '2.5rem', color: '#2563eb' }} />
-            </div>
-            <h1>Welcome, {authState.currentUser.firstName}!</h1>
-            <p>Role: {authState.currentUser.role}</p>
+  // === Login handler ===
+  const handleLogin = async () => {
+    setMessage(null);
+    if (!loginEmail || !loginPassword) return setMessage({ type: 'error', text: 'Enter email and password' });
+
+    try {
+      let resultAction;
+      if (loginRole === 'admin') {
+        resultAction = await dispatch(adminLoginThunk({ email: loginEmail, password: loginPassword }));
+      } else if (loginRole === 'receptionist') {
+        resultAction = await dispatch(receptionistLoginThunk({ email: loginEmail, password: loginPassword }));
+      } else {
+        resultAction = await dispatch(staffLoginThunk({ email: loginEmail, password: loginPassword }));
+      }
+
+      if ((resultAction as any).type.endsWith('fulfilled')) {
+        setMessage({ type: 'success', text: `Welcome back!` });
+        setLoginEmail(''); setLoginPassword('');
+      } else {
+        const errorMsg = (resultAction as any).payload || 'Login failed';
+        setMessage({ type: 'error', text: errorMsg });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Login failed' });
+    }
+  };
+
+  // Determine current logged in user for display
+  const currentUser = adminState.currentAdmin || receptionistState.user || staffState.currentStaff;
+
+  useEffect(() => {
+  if (currentUser) {
+    setMessage({ type: 'success', text: `Welcome, ${currentUser.firstName}! Redirecting...` });
+
+    const timer = setTimeout(() => {
+      // Redirect based on role
+      switch (currentUser.role) {
+        case 'admin':
+          navigate('/admindashboard');
+          break;
+        case 'receptionist':
+          navigate('/receptionistdashboard');
+          break;
+        case 'staff':
+          navigate('/staffdashboard');
+          break;
+        default:
+          navigate('/'); // fallback
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }
+}, [currentUser, navigate]);
+
+  if (currentUser) {
+  return (
+    <div className="auth-page">
+      <div className="logged-in-card" style={{ background: '#f0f9ff' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div
+            style={{
+              width: '5rem',
+              height: '5rem',
+              borderRadius: '50%',
+              background: '#dbeafe',
+              margin: '0 auto 1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <CheckCircle style={{ width: '2.5rem', height: '2.5rem', color: '#2563eb' }} />
           </div>
+          <h1>Welcome, {currentUser.firstName}!</h1>
+          <p>Role: {currentUser.role}. Redirecting to your dashboard...</p>
+          <div className="loader"></div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
 
   return (
     <div className="auth-page">
@@ -182,6 +189,7 @@ const AdminAuthSystem: React.FC = () => {
                   <input className="auth-input" type="email" value={loginEmail} onChange={(e)=>setLoginEmail(e.target.value)} placeholder="your.email@example.com" />
                 </div>
               </div>
+
               <div>
                 <label>Password</label>
                 <div className="input-group">
@@ -190,10 +198,24 @@ const AdminAuthSystem: React.FC = () => {
                   <button className="toggle-password" onClick={()=>setShowPassword(!showPassword)}>{showPassword?<EyeOff />:<Eye />}</button>
                 </div>
               </div>
-              <button className="auth-btn" onClick={handleLogin} disabled={!loginEmail || !loginPassword || loading}>{loading?'Logging in...':'Login'}</button>
+
+              <div>
+                <label>Role</label>
+                <div className="input-group">
+                  <UserStar />
+                  <select className="auth-input" value={loginRole} onChange={(e)=>setLoginRole(e.target.value as UserRole)}>
+                    <option value="admin">Admin</option>
+                    <option value="receptionist">Receptionist</option>
+                    <option value="staff">Staff</option>
+                  </select>
+                </div>
+              </div>
+
+              <button className="auth-btn" onClick={handleLogin} disabled={!loginEmail || !loginPassword}>{'Login'}</button>
             </>
           ) : (
             <>
+              {/* Registration fields remain the same, including role selection */}
               <div className="grid-2">
                 <div>
                   <label>First Name</label>
@@ -222,18 +244,14 @@ const AdminAuthSystem: React.FC = () => {
               <div>
                 <label>Role</label>
                 <div className="input-group">
-                 <UserStar /> {/* icon on the left */}
-                 <select
-                   className="auth-input"
-                   value={regRole}
-                   onChange={(e) => setRegRole(e.target.value as UserRole)}
-                 >
-                   <option value="">Select Role</option>
-                   <option value="receptionist">Receptionist</option>
-                   <option value="housekeeping">Housekeeping</option>
-                   <option value="admin">Admin</option>
-                 </select>
-               </div>
+                  <UserStar />
+                  <select className="auth-input" value={regRole} onChange={(e) => setRegRole(e.target.value as UserRole)}>
+                    <option value="">Select Role</option>
+                    <option value="admin">Admin</option>
+                    <option value="receptionist">Receptionist</option>
+                    <option value="staff">Staff</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -254,7 +272,7 @@ const AdminAuthSystem: React.FC = () => {
                 </div>
               </div>
 
-              <button className="auth-btn" onClick={handleRegister} disabled={loading || !regFirstName || !regLastName || !regEmail || !regPassword || !regConfirmPassword}>{loading?'Creating Account...':'Create Account'}</button>
+              <button className="auth-btn" onClick={handleRegister} disabled={!regFirstName || !regLastName || !regEmail || !regPassword || !regConfirmPassword}>{'Create Account'}</button>
             </>
           )}
         </div>
