@@ -30,8 +30,8 @@ app.use('/api/guests', guestRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/receptionist', receptionistRoutes);
-app.use('/api', roomRoutes);
-app.use('/api', serviceRoutes);
+app.use('/api/rooms', roomRoutes);
+app.use('/api/services', serviceRoutes);
 
 app.get('/', (req, res) => {
   res.send('SmartStay Hotel Server side');

@@ -12,10 +12,9 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let uploadPath = 'uploads/others';
 
-    // Use route path instead of baseUrl
-    if (req.route && req.route.path.includes('rooms')) {
+    if (req.baseUrl.includes('rooms')) {
       uploadPath = 'uploads/rooms';
-    } else if (req.route && req.route.path.includes('services')) {
+    } else if (req.baseUrl.includes('services')) {
       uploadPath = 'uploads/services';
     }
 
@@ -28,8 +27,9 @@ const storage = multer.diskStorage({
   }
 });
 
+
 export const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+  limits: { fileSize: 15 * 1024 * 1024 } // 15MB
 });
 
