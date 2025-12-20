@@ -99,6 +99,27 @@ const [showServiceModal, setShowServiceModal] = useState(false);
 const [editingService, setEditingService] = useState<any>(null);
 
 
+// Add this state near your other states
+const [tasks, setTasks] = useState([
+  { id: '1', guest: 'John Doe', request: 'Room Cleaning', hotel: 'Main Branch', status: 'Pending' },
+  { id: '2', guest: 'Jane Smith', request: 'Extra Towels', hotel: 'Main Branch', status: 'Pending' }
+]);
+
+
+// Add near your other states
+const [staffMembers, setStaffMembers] = useState([
+  { id: '1', name: 'Alice Johnson' },
+  { id: '2', name: 'Bob Smith' },
+  { id: '3', name: 'Charlie Lee' }
+]);
+
+const [showAssignModal, setShowAssignModal] = useState(false);
+const [currentTask, setCurrentTask] = useState<any>(null);
+const [selectedStaff, setSelectedStaff] = useState<string>('');
+
+
+
+
 
   const downloadChart = () => {
     if (chartRef.current) {
@@ -192,7 +213,7 @@ const [editingService, setEditingService] = useState<any>(null);
           {activeTab==='resources' && (
   <div className="card">
     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-      <h2>Manage Rooms & Facilities</h2>
+      <h2>Manage Rooms & Facilities, Packages</h2>
       <button
         onClick={() => {
           setEditingRoom(null);
@@ -299,11 +320,48 @@ const [editingService, setEditingService] = useState<any>(null);
 
 
           {activeTab==='tasks' && (
-            <div className="tasks-section">
-              <h2>Assign Tasks to Staff</h2>
-              <p>Assign housekeeping, maintenance, or other tasks to staff members.</p>
-            </div>
-          )}
+  <div className="card">
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <h2>Guest Requests / Staff Tasks</h2>
+    </div>
+
+    <div style={{ overflowX: 'auto', marginTop:'1rem' }}>
+      <table style={{ width:'100%' }}>
+        <thead>
+          <tr>
+            <th>Guest</th>
+            <th>Request</th>
+            <th>Hotel / Branch</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tasks.map(t => (
+            <tr key={t.id}>
+              <td>{t.guest}</td>
+              <td>{t.request}</td>
+              <td>{t.hotel}</td>
+              <td>{t.status}</td>
+              <td>
+                <button
+                  onClick={() => {
+                    setCurrentTask(t);
+                    setSelectedStaff('');
+                    setShowAssignModal(true);
+                  }}
+                >
+                  Assign
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
+
 
           {activeTab==='profile' && (
             <div className="profile-section">
@@ -422,6 +480,47 @@ const [editingService, setEditingService] = useState<any>(null);
     </div>
   </div>
 )}
+
+{showAssignModal && (
+  <div className="chart-modal">
+    <div className="chart-modal-content">
+      <h2>Assign Task: {currentTask?.request}</h2>
+      
+      <label>Select Staff Member</label>
+      <select
+        value={selectedStaff}
+        onChange={(e) => setSelectedStaff(e.target.value)}
+      >
+        <option value="">-- Select Staff --</option>
+        {staffMembers.map(s => (
+          <option key={s.id} value={s.name}>{s.name}</option>
+        ))}
+      </select>
+
+      <div className="chart-modal-actions">
+        <button onClick={() => setShowAssignModal(false)}>Cancel</button>
+        <button
+          onClick={() => {
+            if (selectedStaff) {
+              const updatedTasks = tasks.map(task =>
+                task.id === currentTask.id
+                  ? { ...task, status: `Assigned to ${selectedStaff}` }
+                  : task
+              );
+              setTasks(updatedTasks);
+              setShowAssignModal(false);
+            } else {
+              alert('Please select a staff member');
+            }
+          }}
+        >
+          Assign
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
 
 
