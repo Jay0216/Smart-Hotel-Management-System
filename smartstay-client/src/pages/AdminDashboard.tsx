@@ -16,6 +16,8 @@ import './AdminDashboard.css';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../redux/store';
 import { addRoomAsync, fetchRoomsAsync } from '../redux/roomSlice';
+import { addServiceAsync, fetchServicesAsync } from '../redux/serviceSlice';
+
 
 
 ChartJS.register(
@@ -47,6 +49,7 @@ const AdminDashboard: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const dispatch = useDispatch<AppDispatch>();
   const { rooms = [], loading, error } = useSelector((state: RootState) => state.rooms);
+  const { services = [], loading: serviceLoading, error: serviceError } = useSelector((state: RootState) => state.services);
 
   const [chartModal, setChartModal] = useState<{ show: boolean, type: 'line' | 'bar', title: string, data: any }>({ show: false, type: 'line', title: '', data: null });
   const chartRef = useRef<any>(null);
@@ -76,21 +79,14 @@ const AdminDashboard: React.FC = () => {
     dispatch(fetchRoomsAsync());
   }, [dispatch]);
 
+  useEffect(() => {
+    dispatch(fetchServicesAsync());
+  }, [dispatch]);
+
   // Resources
 
 
-// Services
-const [services, setServices] = useState([
-  { 
-    id: '1', 
-    hotel: 'Main Branch', 
-    name: 'Spa', 
-    category: 'Wellness', 
-    price: 100, 
-    availability: 'Available',
-    pricingType: 'Fixed'   // Add this
-  }
-]);
+
 
 
 
@@ -179,6 +175,62 @@ const handleAddRoom = async () => {
     alert(err.message || 'Failed to add room');
   }
 };
+
+
+// Service form state
+const [serviceForm, setServiceForm] = useState({
+  branchName: '',
+  name: '',
+  category: '',
+  price: '',
+  pricingType: 'Fixed',
+  availability: 'Available',
+});
+const [serviceImages, setServiceImages] = useState<File[]>([]);
+
+
+const handleServiceInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const { name, value } = e.target;
+  setServiceForm(prev => ({ ...prev, [name]: value }));
+};
+
+const handleServiceImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files) {
+    const newFiles = Array.from(e.target.files);
+    setServiceImages(prev => [
+      ...prev,
+      ...newFiles.filter(nf => !prev.some(f => f.name === nf.name))
+    ]);
+  }
+};
+
+const handleAddService = async () => {
+  const { branchName, name, category, price, pricingType, availability } = serviceForm;
+  if (!branchName || !name || !price) {
+    alert('Please fill all required fields');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('branchName', branchName);
+  formData.append('name', name);
+  formData.append('category', category);
+  formData.append('price', price);
+  formData.append('pricingType', pricingType);
+  formData.append('availability', availability);
+  serviceImages.forEach(img => formData.append('images', img));
+
+  try {
+    await dispatch(addServiceAsync(formData)).unwrap();
+    alert('Service added successfully!');
+    setServiceForm({ branchName: '', name: '', category: '', price: '', pricingType: 'Fixed', availability: 'Available' });
+    setServiceImages([]);
+    setShowServiceModal(false);
+  } catch (err: any) {
+    alert(err.message || 'Failed to add service');
+  }
+};
+
 
 
 
@@ -357,11 +409,11 @@ const handleAddRoom = async () => {
         <tbody>
           {services.map(s => (
             <tr key={s.id}>
-              <td>{s.hotel}</td>
+              <td>{s.branch_name}</td>
               <td>{s.name}</td>
               <td>{s.category}</td>
               <td>${s.price}</td>
-              <td>{s.pricingType || 'Fixed'}</td>
+              <td>{s.pricing_type || 'Fixed'}</td>
               <td>{s.availability}</td>
               <td>
                 <button
@@ -526,49 +578,84 @@ const handleAddRoom = async () => {
 )}
 
 
-{/* Service Add / Edit Modal */}
 {showServiceModal && (
   <div className="chart-modal">
     <div className="chart-modal-content">
       <h2>{editingService ? 'Edit Service' : 'Add Service'}</h2>
 
       <input
+        name="branchName"
         placeholder="Hotel / Branch"
-        defaultValue={editingService?.hotel || ''}
+        value={serviceForm.branchName}
+        onChange={handleServiceInputChange}
       />
       <input
+        name="name"
         placeholder="Service Name"
-        defaultValue={editingService?.name || ''}
+        value={serviceForm.name}
+        onChange={handleServiceInputChange}
       />
       <input
+        name="category"
         placeholder="Category"
-        defaultValue={editingService?.category || ''}
+        value={serviceForm.category}
+        onChange={handleServiceInputChange}
       />
       <input
+        name="price"
         type="number"
         placeholder="Price"
-        defaultValue={editingService?.price || ''}
+        value={serviceForm.price}
+        onChange={handleServiceInputChange}
       />
-      <select defaultValue={editingService?.pricingType || 'Fixed'}>
+      <select
+        name="pricingType"
+        value={serviceForm.pricingType}
+        onChange={handleServiceInputChange}
+      >
         <option value="Fixed">Fixed</option>
         <option value="Variable">Variable</option>
       </select>
-      <select defaultValue={editingService?.availability || 'Available'}>
+      <select
+        name="availability"
+        value={serviceForm.availability}
+        onChange={handleServiceInputChange}
+      >
         <option value="Available">Available</option>
         <option value="Unavailable">Unavailable</option>
       </select>
+
       <input
         type="file"
         accept="image/*"
+        multiple
+        onChange={handleServiceImagesChange}
       />
+
+      {/* Selected Images Preview */}
+      {serviceImages.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+          {serviceImages.map((img, idx) => (
+            <img
+              key={idx}
+              src={URL.createObjectURL(img)}
+              alt={`Selected ${idx}`}
+              style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 5 }}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="chart-modal-actions">
         <button onClick={() => setShowServiceModal(false)}>Cancel</button>
-        <button>{editingService ? 'Update Service' : 'Save Service'}</button>
+        <button onClick={handleAddService}>
+          {editingService ? 'Update Service' : 'Save Service'}
+        </button>
       </div>
     </div>
   </div>
 )}
+
 
 {showAssignModal && (
   <div className="chart-modal">
