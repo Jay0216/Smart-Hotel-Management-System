@@ -65,6 +65,41 @@ const AdminDashboard: React.FC = () => {
     setChartModal({ show: true, type, title, data });
   };
 
+  // Resources
+const [rooms, setRooms] = useState([
+  { id: '1', hotel: 'Main Branch', name: 'Deluxe 101', type: 'Deluxe', price: 150, capacity: 2, status: 'Available' }
+]);
+
+// Services
+const [services, setServices] = useState([
+  { 
+    id: '1', 
+    hotel: 'Main Branch', 
+    name: 'Spa', 
+    category: 'Wellness', 
+    price: 100, 
+    availability: 'Available',
+    pricingType: 'Fixed'   // Add this
+  }
+]);
+
+
+
+// Packages
+const [packages, setPackages] = useState([
+  { id: '1', hotel: 'Main Branch', name: 'Romantic Getaway', room: 'Suite 201', discount: 15 }
+]);
+
+// Room modal state
+const [showRoomModal, setShowRoomModal] = useState(false);
+const [editingRoom, setEditingRoom] = useState<any>(null);
+
+// Service modal state
+const [showServiceModal, setShowServiceModal] = useState(false);
+const [editingService, setEditingService] = useState<any>(null);
+
+
+
   const downloadChart = () => {
     if (chartRef.current) {
       const url = chartRef.current.toBase64Image();
@@ -155,18 +190,113 @@ const AdminDashboard: React.FC = () => {
           )}
 
           {activeTab==='resources' && (
-            <div className="resources-section">
-              <h2>Manage Rooms, Halls & Facilities</h2>
-              <p>Here you can add, edit, or remove rooms, halls, and other resources.</p>
-            </div>
-          )}
+  <div className="card">
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <h2>Manage Rooms & Facilities</h2>
+      <button
+        onClick={() => {
+          setEditingRoom(null);
+          setShowRoomModal(true);
+        }}
+      >
+        + Add Room
+      </button>
+    </div>
+
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', marginTop: '1rem' }}>
+        <thead>
+          <tr>
+            <th>Hotel</th>
+            <th>Room</th>
+            <th>Type</th>
+            <th>Price</th>
+            <th>Capacity</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rooms.map(r => (
+            <tr key={r.id}>
+              <td>{r.hotel}</td>
+              <td>{r.name}</td>
+              <td>{r.type}</td>
+              <td>${r.price}</td>
+              <td>{r.capacity}</td>
+              <td>{r.status}</td>
+              <td>
+                <button
+                  onClick={() => {
+                    setEditingRoom(r);
+                    setShowRoomModal(true);
+                  }}
+                >
+                  Edit
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
 
           {activeTab==='services' && (
-            <div className="services-section">
-              <h2>Manage Services Offered</h2>
-              <p>Add, edit, or remove services offered to guests.</p>
-            </div>
-          )}
+  <div className="card">
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <h2>Manage Services Offered</h2>
+      <button
+        onClick={() => {
+          setEditingService(null);
+          setShowServiceModal(true);
+        }}
+      >
+        + Add Service
+      </button>
+    </div>
+
+    <div style={{ overflowX: 'auto', marginTop:'1rem' }}>
+      <table style={{ width:'100%' }}>
+        <thead>
+          <tr>
+            <th>Hotel / Branch</th>
+            <th>Service Name</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Pricing Type</th>
+            <th>Availability</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {services.map(s => (
+            <tr key={s.id}>
+              <td>{s.hotel}</td>
+              <td>{s.name}</td>
+              <td>{s.category}</td>
+              <td>${s.price}</td>
+              <td>{s.pricingType || 'Fixed'}</td>
+              <td>{s.availability}</td>
+              <td>
+                <button
+                  onClick={() => {
+                    setEditingService(s);
+                    setShowServiceModal(true);
+                  }}
+                >
+                  Edit
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
+
 
           {activeTab==='tasks' && (
             <div className="tasks-section">
@@ -205,6 +335,96 @@ const AdminDashboard: React.FC = () => {
         </div>
       </main>
 
+      {/* Room Add / Edit Modal */}
+{showRoomModal && (
+  <div className="chart-modal">
+    <div className="chart-modal-content">
+      <h2>{editingRoom ? 'Edit Room' : 'Add Room'}</h2>
+
+      <input
+        placeholder="Hotel / Branch"
+        defaultValue={editingRoom?.hotel || ''}
+      />
+      <input
+        placeholder="Room Name"
+        defaultValue={editingRoom?.name || ''}
+      />
+      <input
+        placeholder="Room Type"
+        defaultValue={editingRoom?.type || ''}
+      />
+      <input
+        type="number"
+        placeholder="Price"
+        defaultValue={editingRoom?.price || ''}
+      />
+      <input
+        type="number"
+        placeholder="Capacity"
+        defaultValue={editingRoom?.capacity || ''}
+      />
+
+      <input
+        type="file"
+        accept="image/*"
+      />
+
+      <div className="chart-modal-actions">
+        <button onClick={() => setShowRoomModal(false)}>Cancel</button>
+        <button>
+          {editingRoom ? 'Update Room' : 'Save Room'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Service Add / Edit Modal */}
+{showServiceModal && (
+  <div className="chart-modal">
+    <div className="chart-modal-content">
+      <h2>{editingService ? 'Edit Service' : 'Add Service'}</h2>
+
+      <input
+        placeholder="Hotel / Branch"
+        defaultValue={editingService?.hotel || ''}
+      />
+      <input
+        placeholder="Service Name"
+        defaultValue={editingService?.name || ''}
+      />
+      <input
+        placeholder="Category"
+        defaultValue={editingService?.category || ''}
+      />
+      <input
+        type="number"
+        placeholder="Price"
+        defaultValue={editingService?.price || ''}
+      />
+      <select defaultValue={editingService?.pricingType || 'Fixed'}>
+        <option value="Fixed">Fixed</option>
+        <option value="Variable">Variable</option>
+      </select>
+      <select defaultValue={editingService?.availability || 'Available'}>
+        <option value="Available">Available</option>
+        <option value="Unavailable">Unavailable</option>
+      </select>
+      <input
+        type="file"
+        accept="image/*"
+      />
+
+      <div className="chart-modal-actions">
+        <button onClick={() => setShowServiceModal(false)}>Cancel</button>
+        <button>{editingService ? 'Update Service' : 'Save Service'}</button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
       {/* Chart Modal */}
       {chartModal.show && (
         <div className="chart-modal">
@@ -223,6 +443,8 @@ const AdminDashboard: React.FC = () => {
         </div>
       )}
     </div>
+
+    
   );
 };
 

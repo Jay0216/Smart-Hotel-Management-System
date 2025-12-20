@@ -272,16 +272,110 @@
   background: #1d4ed8;
 }
 
+/* ===== Admin Tables ===== */
+.card table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.card table thead {
+  background: #f1f5f9;
+}
+
+.card table th,
+.card table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.card table th {
+  font-weight: 600;
+  color: #334155;
+}
+
+.card table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.card table button {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background-color: #2563eb;
+  color: white;
+}
+
+.card > div > button {
+  padding: 0.5rem 1rem;
+  background-color: #4f46e5;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
 /* ---------------- Mobile Responsive ---------------- */
 @media (max-width: 768px) {
   .admin-dashboard-page { flex-direction: column; }
   .sidebar { width: 100%; flex-direction: column; align-items: center; padding: 1rem; gap: 1rem; }
   .sidebar-nav { flex-direction: row; justify-content: space-around; width: 100%; }
   .sidebar-nav button { font-size: 0.7rem; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.25rem; }
-  .sidebar-nav .nav-label { display: block; }
   .cards-grid { grid-template-columns: 1fr; }
-  .tab-bar { flex-wrap: nowrap; overflow-x: auto; }
-  .profile-grid { flex-direction: column; align-items: center; gap: 1rem; }
-  .avatar-section { width: 100%; align-items: center; }
-  .profile-form { width: 100%; }
+  .profile-grid { flex-direction: column; }
+}
+
+/* ========================================================= */
+/* ========== SAFE ADDITIONS (NO EXISTING CHANGE) ========== */
+/* ========================================================= */
+
+/* Dark table override for admin cards */
+.card table {
+  background: #1f2937;
+}
+
+.card table thead {
+  background: #111827;
+}
+
+.card table th {
+  color: #e5e7eb;
+}
+
+.card table td {
+  color: #f9fafb;
+  border-bottom: 1px solid #374151;
+}
+
+.card table tbody tr:hover {
+  background: #374151;
+}
+
+/* Modal input styling (Add/Edit Room) */
+.chart-modal-content input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #4b5563;
+  background: #111827;
+  color: #f9fafb;
+}
+
+.chart-modal-content input::placeholder {
+  color: #9ca3af;
+}
+
+/* Modal buttons clarity */
+.chart-modal-actions button:first-child {
+  background: #374151;
+}
+
+.chart-modal-actions button:first-child:hover {
+  background: #4b5563;
 }
