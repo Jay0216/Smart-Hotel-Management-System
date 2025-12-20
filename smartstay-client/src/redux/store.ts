@@ -4,6 +4,7 @@ import guestReducer from './guestSlice';
 import adminReducer from './adminSlice';
 import receptionistReducer from './receptionSlice';
 import staffReducer from './staffSlice';
+import roomReducer from './roomSlice'; // ✅ import roomSlice
 
 export const store = configureStore({
   reducer: {
@@ -11,6 +12,7 @@ export const store = configureStore({
     admin: adminReducer,
     receptionist: receptionistReducer,
     staff: staffReducer,
+    rooms: roomReducer
   },
 });
 

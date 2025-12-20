@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -13,6 +13,10 @@ import {
 } from 'chart.js';
 import { Bell, User, Settings, ClipboardList, Box, Bed, Eye, Download } from 'lucide-react';
 import './AdminDashboard.css';
+import { useSelector, useDispatch } from 'react-redux';
+import type { RootState, AppDispatch } from '../redux/store';
+import { addRoomAsync, fetchRoomsAsync } from '../redux/roomSlice';
+
 
 ChartJS.register(
   CategoryScale,
@@ -41,6 +45,8 @@ const AdminDashboard: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const { rooms = [], loading, error } = useSelector((state: RootState) => state.rooms);
 
   const [chartModal, setChartModal] = useState<{ show: boolean, type: 'line' | 'bar', title: string, data: any }>({ show: false, type: 'line', title: '', data: null });
   const chartRef = useRef<any>(null);
@@ -65,10 +71,13 @@ const AdminDashboard: React.FC = () => {
     setChartModal({ show: true, type, title, data });
   };
 
+
+  useEffect(() => {
+    dispatch(fetchRoomsAsync());
+  }, [dispatch]);
+
   // Resources
-const [rooms, setRooms] = useState([
-  { id: '1', hotel: 'Main Branch', name: 'Deluxe 101', type: 'Deluxe', price: 150, capacity: 2, status: 'Available' }
-]);
+
 
 // Services
 const [services, setServices] = useState([
@@ -116,6 +125,60 @@ const [staffMembers, setStaffMembers] = useState([
 const [showAssignModal, setShowAssignModal] = useState(false);
 const [currentTask, setCurrentTask] = useState<any>(null);
 const [selectedStaff, setSelectedStaff] = useState<string>('');
+
+// Room form state
+const [roomForm, setRoomForm] = useState({
+  branchName: '',
+  roomName: '',
+  roomType: '',
+  price: '',
+  capacity: '',
+});
+const [selectedImages, setSelectedImages] = useState<File[]>([]);
+
+
+const handleRoomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { name, value } = e.target;
+  setRoomForm(prev => ({ ...prev, [name]: value }));
+};
+
+const handleRoomImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files) {
+    const newFiles = Array.from(e.target.files);
+    setSelectedImages(prev => [
+      ...prev,
+      ...newFiles.filter(nf => !prev.some(f => f.name === nf.name))
+    ]);
+  }
+};
+
+
+const handleAddRoom = async () => {
+  const { branchName, roomName, roomType, price, capacity } = roomForm;
+
+  if (!branchName || !roomName || !roomType || !price || !capacity) {
+    alert('Please fill all fields');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('branchName', branchName);
+  formData.append('roomName', roomName);
+  formData.append('roomType', roomType);
+  formData.append('price', price);
+  formData.append('capacity', capacity);
+  selectedImages.forEach(img => formData.append('images', img));
+
+  try {
+    await dispatch(addRoomAsync(formData)).unwrap();
+    alert('Room added successfully!');
+    setRoomForm({ branchName: '', roomName: '', roomType: '', price: '', capacity: '' });
+    setSelectedImages([]);
+    setShowRoomModal(false);
+  } catch (err: any) {
+    alert(err.message || 'Failed to add room');
+  }
+};
 
 
 
@@ -393,49 +456,75 @@ const [selectedStaff, setSelectedStaff] = useState<string>('');
         </div>
       </main>
 
-      {/* Room Add / Edit Modal */}
 {showRoomModal && (
   <div className="chart-modal">
     <div className="chart-modal-content">
       <h2>{editingRoom ? 'Edit Room' : 'Add Room'}</h2>
 
       <input
+        name="branchName"
         placeholder="Hotel / Branch"
-        defaultValue={editingRoom?.hotel || ''}
+        value={roomForm.branchName}
+        onChange={handleRoomInputChange}
       />
       <input
+        name="roomName"
         placeholder="Room Name"
-        defaultValue={editingRoom?.name || ''}
+        value={roomForm.roomName}
+        onChange={handleRoomInputChange}
       />
       <input
+        name="roomType"
         placeholder="Room Type"
-        defaultValue={editingRoom?.type || ''}
+        value={roomForm.roomType}
+        onChange={handleRoomInputChange}
       />
       <input
+        name="price"
         type="number"
         placeholder="Price"
-        defaultValue={editingRoom?.price || ''}
+        value={roomForm.price}
+        onChange={handleRoomInputChange}
       />
       <input
+        name="capacity"
         type="number"
         placeholder="Capacity"
-        defaultValue={editingRoom?.capacity || ''}
+        value={roomForm.capacity}
+        onChange={handleRoomInputChange}
       />
 
       <input
         type="file"
         accept="image/*"
+        multiple
+        onChange={handleRoomImagesChange}
       />
+
+      {/* Show selected images */}
+      {selectedImages.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+          {selectedImages.map((img, idx) => (
+            <img
+              key={idx}
+              src={URL.createObjectURL(img)}
+              alt={`Selected ${idx}`}
+              style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 5 }}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="chart-modal-actions">
         <button onClick={() => setShowRoomModal(false)}>Cancel</button>
-        <button>
+        <button onClick={handleAddRoom}>
           {editingRoom ? 'Update Room' : 'Save Room'}
         </button>
       </div>
     </div>
   </div>
 )}
+
 
 {/* Service Add / Edit Modal */}
 {showServiceModal && (
