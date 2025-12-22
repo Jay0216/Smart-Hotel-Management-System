@@ -35,8 +35,8 @@ interface AdminState {
 
 // ====== Initial State ======
 const initialState: AdminState = {
-  currentAdmin: null,
-  token: null,
+  currentAdmin: JSON.parse(localStorage.getItem('adminUser') || 'null'),
+  token: localStorage.getItem('adminToken'),
   loading: false,
   error: null,
 };
@@ -83,6 +83,8 @@ const adminSlice = createSlice({
       state.token = null;
       state.error = null;
       state.loading = false;
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminUser');
     },
   },
   extraReducers: (builder) => {
@@ -95,14 +97,7 @@ const adminSlice = createSlice({
       .addCase(adminRegisterThunk.fulfilled, (state, action: PayloadAction<AdminRegisterResponse>) => {
         state.loading = false;
         // Optionally you can set currentAdmin after registration
-        state.currentAdmin = {
-          id: action.payload.user.admin_id,
-          firstName: action.payload.user.first_name,
-          lastName: action.payload.user.last_name,
-          email: action.payload.user.email,
-          role: 'admin',
-          imageUrl: action.payload.user.image_url,
-        };
+        
       })
       .addCase(adminRegisterThunk.rejected, (state, action) => {
         state.loading = false;
@@ -118,6 +113,10 @@ const adminSlice = createSlice({
         state.loading = false;
         state.currentAdmin = action.payload.user;
         state.token = action.payload.token;
+
+        // Store in localStorage
+        localStorage.setItem('adminToken', action.payload.token);
+        localStorage.setItem('adminUser', JSON.stringify(action.payload.user));
       })
       .addCase(adminLoginThunk.rejected, (state, action) => {
         state.loading = false;

@@ -19,6 +19,7 @@ import StaffLogin from './pages/StaffLogin.tsx'
 import StaffProtectedRoute from './StaffProtectedRoute.tsx'
 import ReceptionistProtectedRoute from './ReceptionProtectedRoute.tsx'
 import GuestProtectedRoute from './GuestProtectedRoute.tsx'
+import AdminProtectedRoute from './AdminProtectedRoute.tsx'
 
 const routes = createBrowserRouter([
 
@@ -50,7 +51,11 @@ const routes = createBrowserRouter([
 
   {
     path: "/admindashboard",
-    element: <AdminDashboard/>
+    element: (
+    <AdminProtectedRoute>
+      <AdminDashboard />
+    </AdminProtectedRoute>
+    )
   },
 
   {

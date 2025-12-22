@@ -51,7 +51,7 @@ const AdminAuthSystem: React.FC = () => {
         setTimeout(() => {
           setView('login');
           setMessage(null);
-        }, 2000);
+        }, 1000);
       } else {
         const errorMsg = (resultAction as any).payload || 'Registration failed';
         setMessage({ type: 'error', text: errorMsg });
