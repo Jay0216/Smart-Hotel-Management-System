@@ -2,23 +2,27 @@ const API_BASE_URL = 'http://localhost:3000/api/rooms';
 
 export interface RoomFormData {
   branchName: string;
+  country: string;
   roomName: string;
   roomType: string;
   price: number;
   capacity: number;
-  images: FileList | null;
+  images?: FileList | null;
 }
+
 
 export interface Room {
   id: number;
-  hotel: string;
-  name: string;
-  type: string;
+  branch_name: string;   // from branches table
+  country: string;
+  room_name: string;
+  room_type: string;
   price: number;
   capacity: number;
   status: string;
   images?: string[];
 }
+
 
 export const addRoom = async (formData: FormData): Promise<{ room: Room; message: string }> => {
   const response = await fetch(`${API_BASE_URL}/addrooms`, {

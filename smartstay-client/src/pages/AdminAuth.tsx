@@ -1,22 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, User, UserStar, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, User, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../redux/store';
 import { adminRegisterThunk, adminLoginThunk } from '../redux/adminSlice';
-import { receptionistRegisterThunk, receptionistLoginThunk } from '../redux/receptionSlice';
-import { staffRegisterThunk, staffLoginThunk } from '../redux/staffSlice';
 import './AdminAuth.css';
 import { useNavigate } from 'react-router-dom';
 
-type UserRole = 'admin' | 'receptionist' | 'staff';
-
 const AdminAuthSystem: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-
   const adminState = useSelector((state: RootState) => state.admin);
-  const receptionistState = useSelector((state: RootState) => state.receptionist);
-  const staffState = useSelector((state: RootState) => state.staff);
-
   const navigate = useNavigate();
 
   const [view, setView] = useState<'login' | 'register'>('login');
@@ -24,17 +16,16 @@ const AdminAuthSystem: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Login/Register fields
+  // Login fields
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [loginRole, setLoginRole] = useState<UserRole>('admin');
 
+  // Registration fields
   const [regFirstName, setRegFirstName] = useState('');
   const [regLastName, setRegLastName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
-  const [regRole, setRegRole] = useState<UserRole>('receptionist');
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePassword = (password: string) => password.length >= 8;
@@ -49,28 +40,23 @@ const AdminAuthSystem: React.FC = () => {
     if (regPassword !== regConfirmPassword) return setMessage({ type: 'error', text: 'Passwords do not match' });
 
     try {
-      let resultAction;
-      if (regRole === 'admin') {
-        resultAction = await dispatch(adminRegisterThunk({ firstName: regFirstName, lastName: regLastName, email: regEmail, password: regPassword }));
-      } else if (regRole === 'receptionist') {
-        resultAction = await dispatch(receptionistRegisterThunk({ firstName: regFirstName, lastName: regLastName, email: regEmail, password: regPassword }));
-      } else {
-        resultAction = await dispatch(staffRegisterThunk({ firstName: regFirstName, lastName: regLastName, email: regEmail, password: regPassword }));
-      }
+      const resultAction = await dispatch(
+        adminRegisterThunk({ firstName: regFirstName, lastName: regLastName, email: regEmail, password: regPassword })
+      );
 
       if ((resultAction as any).type.endsWith('fulfilled')) {
-        setMessage({ type: 'success', text: 'Account created successfully! Please login.' });
-        setRegFirstName(''); setRegLastName(''); setRegEmail(''); setRegPassword(''); setRegConfirmPassword(''); setRegRole('receptionist');
+        setMessage({ type: 'success', text: 'Admin account created! Please login.' });
+        setRegFirstName(''); setRegLastName(''); setRegEmail(''); setRegPassword(''); setRegConfirmPassword('');
         
         setTimeout(() => {
-         setView('login');
-         setMessage(null);
+          setView('login');
+          setMessage(null);
         }, 2000);
       } else {
         const errorMsg = (resultAction as any).payload || 'Registration failed';
         setMessage({ type: 'error', text: errorMsg });
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Registration failed' });
     }
   };
@@ -81,14 +67,7 @@ const AdminAuthSystem: React.FC = () => {
     if (!loginEmail || !loginPassword) return setMessage({ type: 'error', text: 'Enter email and password' });
 
     try {
-      let resultAction;
-      if (loginRole === 'admin') {
-        resultAction = await dispatch(adminLoginThunk({ email: loginEmail, password: loginPassword }));
-      } else if (loginRole === 'receptionist') {
-        resultAction = await dispatch(receptionistLoginThunk({ email: loginEmail, password: loginPassword }));
-      } else {
-        resultAction = await dispatch(staffLoginThunk({ email: loginEmail, password: loginPassword }));
-      }
+      const resultAction = await dispatch(adminLoginThunk({ email: loginEmail, password: loginPassword }));
 
       if ((resultAction as any).type.endsWith('fulfilled')) {
         setMessage({ type: 'success', text: `Welcome back!` });
@@ -97,73 +76,58 @@ const AdminAuthSystem: React.FC = () => {
         const errorMsg = (resultAction as any).payload || 'Login failed';
         setMessage({ type: 'error', text: errorMsg });
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Login failed' });
     }
   };
 
-  // Determine current logged in user for display
-  const currentUser = adminState.currentAdmin || receptionistState.user || staffState.currentStaff;
+  const currentAdmin = adminState.currentAdmin;
 
   useEffect(() => {
-  if (currentUser) {
-    setMessage({ type: 'success', text: `Welcome, ${currentUser.firstName}! Redirecting...` });
+    if (currentAdmin) {
+      setMessage({ type: 'success', text: `Welcome, ${currentAdmin.firstName}! Redirecting...` });
 
-    const timer = setTimeout(() => {
-      // Redirect based on role
-      switch (currentUser.role) {
-        case 'admin':
-          navigate('/admindashboard');
-          break;
-        case 'receptionist':
-          navigate('/receptionistdashboard');
-          break;
-        case 'staff':
-          navigate('/staffdashboard');
-          break;
-        default:
-          navigate('/'); // fallback
-      }
-    }, 1500);
+      const timer = setTimeout(() => {
+        navigate('/admindashboard');
+      }, 1500);
 
-    return () => clearTimeout(timer);
-  }
-}, [currentUser, navigate]);
+      return () => clearTimeout(timer);
+    }
+  }, [currentAdmin, navigate]);
 
-  if (currentUser) {
-  return (
-    <div className="auth-page">
-      <div className="logged-in-card" style={{ background: '#f0f9ff' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div
-            style={{
-              width: '5rem',
-              height: '5rem',
-              borderRadius: '50%',
-              background: '#dbeafe',
-              margin: '0 auto 1rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <CheckCircle style={{ width: '2.5rem', height: '2.5rem', color: '#2563eb' }} />
+  if (currentAdmin) {
+    return (
+      <div className="auth-page">
+        <div className="logged-in-card" style={{ background: '#f0f9ff' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div
+              style={{
+                width: '5rem',
+                height: '5rem',
+                borderRadius: '50%',
+                background: '#dbeafe',
+                margin: '0 auto 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <CheckCircle style={{ width: '2.5rem', height: '2.5rem', color: '#2563eb' }} />
+            </div>
+            <h1>Welcome, {currentAdmin.firstName}!</h1>
+            <p>Redirecting to your dashboard...</p>
+            <div className="loader"></div>
           </div>
-          <h1>Welcome, {currentUser.firstName}!</h1>
-          <p>Role: {currentUser.role}. Redirecting to your dashboard...</p>
-          <div className="loader"></div>
         </div>
       </div>
-    </div>
-  );
-}
-
+    );
+  }
 
   return (
     <div className="auth-page">
       <div className="auth-card" style={{ background: '#f9fafb' }}>
         <div className="auth-header" style={{ background: 'linear-gradient(to right, #4f46e5, #2563eb)' }}>
-          <h1>Staff Portal</h1>
+          <h1>Admin Portal</h1>
           <p>Hotel Management System</p>
         </div>
 
@@ -186,7 +150,7 @@ const AdminAuthSystem: React.FC = () => {
                 <label>Email Address</label>
                 <div className="input-group">
                   <Mail />
-                  <input className="auth-input" type="email" value={loginEmail} onChange={(e)=>setLoginEmail(e.target.value)} placeholder="your.email@example.com" />
+                  <input className="auth-input" type="email" value={loginEmail} onChange={(e)=>setLoginEmail(e.target.value)} placeholder="admin@example.com" />
                 </div>
               </div>
 
@@ -199,23 +163,10 @@ const AdminAuthSystem: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label>Role</label>
-                <div className="input-group">
-                  <UserStar />
-                  <select className="auth-input" value={loginRole} onChange={(e)=>setLoginRole(e.target.value as UserRole)}>
-                    <option value="admin">Admin</option>
-                    <option value="receptionist">Receptionist</option>
-                    <option value="staff">Staff</option>
-                  </select>
-                </div>
-              </div>
-
               <button className="auth-btn" onClick={handleLogin} disabled={!loginEmail || !loginPassword}>{'Login'}</button>
             </>
           ) : (
             <>
-              {/* Registration fields remain the same, including role selection */}
               <div className="grid-2">
                 <div>
                   <label>First Name</label>
@@ -237,20 +188,7 @@ const AdminAuthSystem: React.FC = () => {
                 <label>Email Address</label>
                 <div className="input-group">
                   <Mail />
-                  <input className="auth-input" type="email" value={regEmail} onChange={(e)=>setRegEmail(e.target.value)} placeholder="your.email@example.com"/>
-                </div>
-              </div>
-
-              <div>
-                <label>Role</label>
-                <div className="input-group">
-                  <UserStar />
-                  <select className="auth-input" value={regRole} onChange={(e) => setRegRole(e.target.value as UserRole)}>
-                    <option value="">Select Role</option>
-                    <option value="admin">Admin</option>
-                    <option value="receptionist">Receptionist</option>
-                    <option value="staff">Staff</option>
-                  </select>
+                  <input className="auth-input" type="email" value={regEmail} onChange={(e)=>setRegEmail(e.target.value)} placeholder="admin@example.com"/>
                 </div>
               </div>
 
@@ -272,7 +210,7 @@ const AdminAuthSystem: React.FC = () => {
                 </div>
               </div>
 
-              <button className="auth-btn" onClick={handleRegister} disabled={!regFirstName || !regLastName || !regEmail || !regPassword || !regConfirmPassword}>{'Create Account'}</button>
+              <button className="auth-btn" onClick={handleRegister} disabled={!regFirstName || !regLastName || !regEmail || !regPassword || !regConfirmPassword}>{'Create Admin Account'}</button>
             </>
           )}
         </div>

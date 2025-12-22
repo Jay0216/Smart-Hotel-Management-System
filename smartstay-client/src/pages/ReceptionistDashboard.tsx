@@ -1,5 +1,5 @@
 // ReceptionistDashboard.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   ClipboardList,
   LogIn,
@@ -10,6 +10,9 @@ import {
   CreditCard
 } from 'lucide-react';
 import './ReceptionistDashboard.css';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../redux/store';
+import { useNavigate } from 'react-router-dom';
 
 interface Reservation {
   id: string;
@@ -45,12 +48,16 @@ const ReceptionistDashboard: React.FC = () => {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const { currentReceptionist } = useSelector((state: RootState) => state.receptionist);
+
+  
+
   return (
     <div className="reception-dashboard-page">
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="avatar"><User /></div>
-          <h2>Receptionist</h2>
+          <h2>{currentReceptionist?.firstName} {currentReceptionist?.lastName}</h2>
           <p>Front Desk</p>
         </div>
 

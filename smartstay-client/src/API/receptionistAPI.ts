@@ -1,5 +1,8 @@
 import type { RegisterPayload, LoginPayload, AuthResponse } from './hotelStaffAuthTypes.ts';
 
+
+
+
 const BASE = 'http://localhost:3000/api/receptionist';
 
 export const registerReceptionist = async (data: RegisterPayload): Promise<AuthResponse> => {
@@ -21,3 +24,5 @@ export const loginReceptionist = async (data: LoginPayload): Promise<AuthRespons
   if (!res.ok) throw await res.json();
   return res.json();
 };
+
+

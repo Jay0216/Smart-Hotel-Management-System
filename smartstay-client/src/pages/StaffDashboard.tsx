@@ -1,6 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ClipboardList, CalendarCheck, Wrench, User } from 'lucide-react';
 import './StaffDashboard.css';
+import type { RootState } from '../redux/store';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 interface Task {
   id: string;
@@ -10,6 +13,8 @@ interface Task {
 }
 
 const StaffDashboard: React.FC = () => {
+
+  
   const [activeTab, setActiveTab] =
     useState<'dashboard' | 'tasks' | 'services' | 'profile'>('dashboard');
 
@@ -19,8 +24,15 @@ const StaffDashboard: React.FC = () => {
     { id: '3', title: 'Prepare Hall A', status: 'completed', schedule: 'Yesterday' },
   ];
 
+  const { currentStaff } = useSelector((state: RootState) => state.staff);
+  
+
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  
+
+
 
   return (
     <div className="staff-dashboard-page">
@@ -28,7 +40,7 @@ const StaffDashboard: React.FC = () => {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="avatar"><User /></div>
-          <h2>Staff Member</h2>
+          <h2>{currentStaff?.firstName} {currentStaff?.lastName}</h2>
           <p>Hotel Staff</p>
         </div>
 

@@ -1,10 +1,11 @@
-export type UserRole = 'admin' | 'receptionist' | 'staff';
+export type UserRole = 'receptionist' | 'staff';
 
 export interface RegisterPayload {
   firstName: string;
   lastName: string;
   email: string;
   password: string;
+  branch: string;
 }
 
 export interface LoginPayload {
@@ -20,6 +21,5 @@ export interface AuthResponse {
     lastName: string;
     email: string;
     role: UserRole;
-    imageUrl?: string;
   };
 }

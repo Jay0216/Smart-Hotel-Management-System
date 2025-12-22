@@ -2,22 +2,22 @@ const API_BASE_URL = 'http://localhost:3000/api/services';
 
 export interface ServiceFormData {
   branchName: string;
+  country: string; // new field
   name: string;
   category?: string;
   price: number;
   pricingType?: 'Fixed' | 'Variable';
-  availability?: 'Available' | 'Unavailable';
   images: FileList | null;
 }
 
 export interface Service {
   id: number;
   branch_name: string;
+  country: string; // new field
   name: string;
   category?: string;
   price: number;
-  pricing_type: string;
-  availability: string;
+  pricing_type: 'Fixed' | 'Variable';
   images?: string[];
 }
 

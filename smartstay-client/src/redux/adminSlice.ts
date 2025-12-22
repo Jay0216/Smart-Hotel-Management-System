@@ -1,15 +1,39 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { registerAdmin, loginAdmin } from '../API/adminAPI';
-import type { RegisterPayload, LoginPayload, AuthResponse } from '../API/hotelStaffAuthTypes';
+
+// ====== Types ======
+interface AdminRegisterResponse {
+  message: string;
+  user: {
+    admin_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    image_url: string | null;
+  };
+}
+
+interface AdminLoginResponse {
+  token: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: 'admin';
+    imageUrl: string | null;
+  };
+}
 
 interface AdminState {
-  currentAdmin: AuthResponse['user'] | null;
+  currentAdmin: AdminLoginResponse['user'] | null;
   token: string | null;
   loading: boolean;
   error: string | null;
 }
 
+// ====== Initial State ======
 const initialState: AdminState = {
   currentAdmin: null,
   token: null,
@@ -17,7 +41,14 @@ const initialState: AdminState = {
   error: null,
 };
 
-export const adminRegisterThunk = createAsyncThunk<AuthResponse, RegisterPayload>(
+// ====== Async Thunks ======
+export const adminRegisterThunk = createAsyncThunk<AdminRegisterResponse, {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  imageUrl?: string;
+}>(
   'admin/register',
   async (data, { rejectWithValue }) => {
     try {
@@ -28,7 +59,10 @@ export const adminRegisterThunk = createAsyncThunk<AuthResponse, RegisterPayload
   }
 );
 
-export const adminLoginThunk = createAsyncThunk<AuthResponse, LoginPayload>(
+export const adminLoginThunk = createAsyncThunk<AdminLoginResponse, {
+  email: string;
+  password: string;
+}>(
   'admin/login',
   async (data, { rejectWithValue }) => {
     try {
@@ -39,6 +73,7 @@ export const adminLoginThunk = createAsyncThunk<AuthResponse, LoginPayload>(
   }
 );
 
+// ====== Slice ======
 const adminSlice = createSlice({
   name: 'admin',
   initialState,
@@ -57,10 +92,17 @@ const adminSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(adminRegisterThunk.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
+      .addCase(adminRegisterThunk.fulfilled, (state, action: PayloadAction<AdminRegisterResponse>) => {
         state.loading = false;
-        state.currentAdmin = action.payload.user;
-        state.token = action.payload.token;
+        // Optionally you can set currentAdmin after registration
+        state.currentAdmin = {
+          id: action.payload.user.admin_id,
+          firstName: action.payload.user.first_name,
+          lastName: action.payload.user.last_name,
+          email: action.payload.user.email,
+          role: 'admin',
+          imageUrl: action.payload.user.image_url,
+        };
       })
       .addCase(adminRegisterThunk.rejected, (state, action) => {
         state.loading = false;
@@ -72,7 +114,7 @@ const adminSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(adminLoginThunk.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
+      .addCase(adminLoginThunk.fulfilled, (state, action: PayloadAction<AdminLoginResponse>) => {
         state.loading = false;
         state.currentAdmin = action.payload.user;
         state.token = action.payload.token;
@@ -86,3 +128,4 @@ const adminSlice = createSlice({
 
 export const { adminLogout } = adminSlice.actions;
 export default adminSlice.reducer;
+

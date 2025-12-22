@@ -17,6 +17,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../redux/store';
 import { addRoomAsync, fetchRoomsAsync } from '../redux/roomSlice';
 import { addServiceAsync, fetchServicesAsync } from '../redux/serviceSlice';
+import { staffRegisterThunk } from '../redux/staffSlice';
+import { receptionistRegisterThunk } from '../redux/receptionSlice';
+import { fetchAllStaffUsersThunk } from '../redux/allStaffUsersSlice';
 
 
 
@@ -39,7 +42,7 @@ interface Notification {
 }
 
 const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'resources' | 'services' | 'tasks' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'resources' | 'services' | 'tasks' | 'staff' | 'profile'>('dashboard');
   const [notifications, setNotifications] = useState<Notification[]>([
     { id: '1', text: 'New booking received', type: 'info', timestamp: '2025-12-16 09:00' },
     { id: '2', text: 'Staff task assigned', type: 'success', timestamp: '2025-12-16 10:30' }
@@ -50,7 +53,6 @@ const AdminDashboard: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { rooms = [], loading, error } = useSelector((state: RootState) => state.rooms);
   const { services = [], loading: serviceLoading, error: serviceError } = useSelector((state: RootState) => state.services);
-
   const [chartModal, setChartModal] = useState<{ show: boolean, type: 'line' | 'bar', title: string, data: any }>({ show: false, type: 'line', title: '', data: null });
   const chartRef = useRef<any>(null);
 
@@ -125,11 +127,13 @@ const [selectedStaff, setSelectedStaff] = useState<string>('');
 // Room form state
 const [roomForm, setRoomForm] = useState({
   branchName: '',
+  country: '',
   roomName: '',
   roomType: '',
   price: '',
   capacity: '',
 });
+
 const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
 
@@ -150,41 +154,51 @@ const handleRoomImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
 
 const handleAddRoom = async () => {
-  const { branchName, roomName, roomType, price, capacity } = roomForm;
+  const { branchName, country, roomName, roomType, price, capacity } = roomForm;
 
-  if (!branchName || !roomName || !roomType || !price || !capacity) {
+  if (!branchName || !country || !roomName || !roomType || !price || !capacity) {
     alert('Please fill all fields');
     return;
   }
 
   const formData = new FormData();
   formData.append('branchName', branchName);
+  formData.append('country', country);
   formData.append('roomName', roomName);
   formData.append('roomType', roomType);
   formData.append('price', price);
   formData.append('capacity', capacity);
+
   selectedImages.forEach(img => formData.append('images', img));
 
   try {
     await dispatch(addRoomAsync(formData)).unwrap();
-    alert('Room added successfully!');
-    setRoomForm({ branchName: '', roomName: '', roomType: '', price: '', capacity: '' });
-    setSelectedImages([]);
     setShowRoomModal(false);
+    setRoomForm({
+      branchName: '',
+      country: '',
+      roomName: '',
+      roomType: '',
+      price: '',
+      capacity: '',
+    });
+    setSelectedImages([]);
+    alert('Room added successfully!');
   } catch (err: any) {
     alert(err.message || 'Failed to add room');
   }
 };
 
 
+
 // Service form state
 const [serviceForm, setServiceForm] = useState({
   branchName: '',
+  country: '',
   name: '',
   category: '',
   price: '',
   pricingType: 'Fixed',
-  availability: 'Available',
 });
 const [serviceImages, setServiceImages] = useState<File[]>([]);
 
@@ -205,34 +219,122 @@ const handleServiceImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 };
 
 const handleAddService = async () => {
-  const { branchName, name, category, price, pricingType, availability } = serviceForm;
-  if (!branchName || !name || !price) {
+  const { branchName, country, name, category, price, pricingType } = serviceForm;
+
+  if (!branchName || !country || !name || !price) {
     alert('Please fill all required fields');
     return;
   }
 
   const formData = new FormData();
   formData.append('branchName', branchName);
+  formData.append('country', country);
   formData.append('name', name);
   formData.append('category', category);
   formData.append('price', price);
   formData.append('pricingType', pricingType);
-  formData.append('availability', availability);
+
   serviceImages.forEach(img => formData.append('images', img));
 
   try {
     await dispatch(addServiceAsync(formData)).unwrap();
-    alert('Service added successfully!');
-    setServiceForm({ branchName: '', name: '', category: '', price: '', pricingType: 'Fixed', availability: 'Available' });
+
+    setServiceForm({
+      branchName: '',
+      country: '',
+      name: '',
+      category: '',
+      price: '',
+      pricingType: 'Fixed',
+    });
+
     setServiceImages([]);
     setShowServiceModal(false);
+    alert('Service added successfully!');
   } catch (err: any) {
     alert(err.message || 'Failed to add service');
   }
 };
 
+const [staffList, setStaffList] = useState([
+  { id: '1', name: 'Alice Johnson', role: 'Staff', email: 'alice@example.com' },
+  { id: '2', name: 'Bob Smith', role: 'Receptionist', email: 'bob@example.com' },
+]);
+
+const [showStaffModal, setShowStaffModal] = useState(false);
+const [editingStaff, setEditingStaff] = useState<any>(null);
+const [staffForm, setStaffForm] = useState({
+  firstName: '',
+  lastName: '',
+  email: '',
+  password: '',
+  role: 'Staff',
+  branch: ''
+});
+
+const handleStaffInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const { name, value } = e.target;
+  setStaffForm(prev => ({ ...prev, [name]: value }));
+};
+
+const handleAddStaff = async () => {
+  const { firstName, lastName, email, password, role, branch } = staffForm;
+
+  if (!firstName || !lastName || !email || !password || !role || !branch) {
+    alert('Please fill all required fields');
+    return;
+  }
+
+  const payload = {
+    firstName,
+    lastName,
+    email,
+    password,
+    branch,
+  };
+
+  console.log('Registering staff with payload:', payload);
+
+  try {
+    if (role === 'Staff') {
+      await dispatch(staffRegisterThunk(payload)).unwrap();
+    } else if (role === 'Receptionist') {
+      await dispatch(receptionistRegisterThunk(payload)).unwrap();
+    }
+
+    alert(`${role} added successfully!`);
+    setShowStaffModal(false);
+
+    // Reset form
+    setStaffForm({
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      role: 'Staff',
+      branch: ''
+    });
+
+    dispatch(fetchAllStaffUsersThunk());
+
+    // Optionally refresh staff list
+    // fetchStaffByRole(role);
+  } catch (err: any) {
+    alert(err.message || `Failed to add ${role}`);
+  }
+};
 
 
+
+const {
+  users: allStaff,
+  loading: loadingStaff,
+  error: staffError
+} = useSelector((state: RootState) => state.allstaff);
+
+useEffect(() => {
+  dispatch(fetchAllStaffUsersThunk());
+}, [dispatch]);
 
 
 
@@ -261,6 +363,7 @@ const handleAddService = async () => {
           <button className={activeTab==='dashboard'?'active':''} onClick={()=>setActiveTab('dashboard')}><ClipboardList /><span className="nav-label">Dashboard</span></button>
           <button className={activeTab==='resources'?'active':''} onClick={()=>setActiveTab('resources')}><Bed /><span className="nav-label">Resources</span></button>
           <button className={activeTab==='services'?'active':''} onClick={()=>setActiveTab('services')}><Box /><span className="nav-label">Services</span></button>
+          <button className={activeTab==='staff'?'active':''} onClick={()=>setActiveTab('staff')}><User /><span className="nav-label">Staff</span></button>
           <button className={activeTab==='tasks'?'active':''} onClick={()=>setActiveTab('tasks')}><Settings /><span className="nav-label">Tasks</span></button>
           <button className={activeTab==='profile'?'active':''} onClick={()=>setActiveTab('profile')}><User /><span className="nav-label">Profile</span></button>
         </nav>
@@ -301,6 +404,8 @@ const handleAddService = async () => {
           <button className={activeTab==='services'?'active':''} onClick={()=>setActiveTab('services')}>Services</button>
           <button className={activeTab==='tasks'?'active':''} onClick={()=>setActiveTab('tasks')}>Tasks</button>
           <button className={activeTab==='profile'?'active':''} onClick={()=>setActiveTab('profile')}>Profile</button>
+          <button className={activeTab==='staff'?'active':''} onClick={()=>setActiveTab('staff')}>Staff</button>
+
         </div>
 
         {/* Dashboard Body */}
@@ -355,9 +460,9 @@ const handleAddService = async () => {
         <tbody>
           {rooms.map(r => (
             <tr key={r.id}>
-              <td>{r.hotel}</td>
-              <td>{r.name}</td>
-              <td>{r.type}</td>
+              <td>{r.branch_name}</td>
+              <td>{r.room_name}</td>
+              <td>{r.room_type}</td>
               <td>${r.price}</td>
               <td>{r.capacity}</td>
               <td>{r.status}</td>
@@ -402,7 +507,6 @@ const handleAddService = async () => {
             <th>Category</th>
             <th>Price</th>
             <th>Pricing Type</th>
-            <th>Availability</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -414,7 +518,6 @@ const handleAddService = async () => {
               <td>{s.category}</td>
               <td>${s.price}</td>
               <td>{s.pricing_type || 'Fixed'}</td>
-              <td>{s.availability}</td>
               <td>
                 <button
                   onClick={() => {
@@ -477,6 +580,53 @@ const handleAddService = async () => {
   </div>
 )}
 
+{activeTab==='staff' && (
+  <div className="card">
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <h2>Manage Staff & Receptionists</h2>
+      <button onClick={() => { setEditingStaff(null); setShowStaffModal(true); }}>+ Add Staff</button>
+    </div>
+
+    <div style={{ overflowX:'auto', marginTop:'1rem' }}>
+      <table style={{ width:'100%' }}>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Branch ID</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        
+<tbody>
+{loadingStaff ? (
+  <tr><td colSpan={4}>Loading...</td></tr>
+) : staffError ? (
+  <tr><td colSpan={4}>{staffError}</td></tr>
+) : (!allStaff || allStaff.length === 0) ? ( // ✅ guard added
+  <tr><td colSpan={4}>No staff found</td></tr>
+) : (
+  allStaff.map(s => (
+    <tr key={s.id}>
+      <td>{s.first_name}</td>
+      <td>{s.email}</td>
+      <td>{s.role}</td>
+      <td>{s.branch}</td>
+      <td>
+        <button onClick={() => setShowStaffModal(true)}>Edit</button>
+      </td>
+    </tr>
+  ))
+)}
+</tbody>
+        
+      </table>
+    </div>
+  </div>
+)}
+
+
 
           {activeTab==='profile' && (
             <div className="profile-section">
@@ -515,22 +665,32 @@ const handleAddService = async () => {
 
       <input
         name="branchName"
-        placeholder="Hotel / Branch"
+        placeholder="Hotel / Branch Name"
         value={roomForm.branchName}
         onChange={handleRoomInputChange}
       />
+
+      <input
+        name="country"
+        placeholder="Country"
+        value={roomForm.country}
+        onChange={handleRoomInputChange}
+      />
+
       <input
         name="roomName"
         placeholder="Room Name"
         value={roomForm.roomName}
         onChange={handleRoomInputChange}
       />
+
       <input
         name="roomType"
         placeholder="Room Type"
         value={roomForm.roomType}
         onChange={handleRoomInputChange}
       />
+
       <input
         name="price"
         type="number"
@@ -538,6 +698,7 @@ const handleAddService = async () => {
         value={roomForm.price}
         onChange={handleRoomInputChange}
       />
+
       <input
         name="capacity"
         type="number"
@@ -578,29 +739,45 @@ const handleAddService = async () => {
 )}
 
 
+
 {showServiceModal && (
   <div className="chart-modal">
     <div className="chart-modal-content">
       <h2>{editingService ? 'Edit Service' : 'Add Service'}</h2>
 
+      {/* Branch / Hotel */}
       <input
         name="branchName"
         placeholder="Hotel / Branch"
         value={serviceForm.branchName}
         onChange={handleServiceInputChange}
       />
+
+      {/* Country */}
+      <input
+        name="country"
+        placeholder="Country"
+        value={serviceForm.country}
+        onChange={handleServiceInputChange}
+      />
+
+      {/* Service Name */}
       <input
         name="name"
         placeholder="Service Name"
         value={serviceForm.name}
         onChange={handleServiceInputChange}
       />
+
+      {/* Category */}
       <input
         name="category"
         placeholder="Category"
         value={serviceForm.category}
         onChange={handleServiceInputChange}
       />
+
+      {/* Price */}
       <input
         name="price"
         type="number"
@@ -608,23 +785,29 @@ const handleAddService = async () => {
         value={serviceForm.price}
         onChange={handleServiceInputChange}
       />
-      <select
-        name="pricingType"
-        value={serviceForm.pricingType}
-        onChange={handleServiceInputChange}
-      >
-        <option value="Fixed">Fixed</option>
-        <option value="Variable">Variable</option>
-      </select>
-      <select
-        name="availability"
-        value={serviceForm.availability}
-        onChange={handleServiceInputChange}
-      >
-        <option value="Available">Available</option>
-        <option value="Unavailable">Unavailable</option>
-      </select>
 
+      {/* Pricing Type (Fixed / Variable) */}
+      <div className="pricing-type-group">
+        <label>Pricing Type</label>
+        <div className="pricing-options">
+          <button
+            type="button"
+            className={serviceForm.pricingType === 'Fixed' ? 'active' : ''}
+            onClick={() => setServiceForm(p => ({ ...p, pricingType: 'Fixed' }))}
+          >
+            Fixed
+          </button>
+          <button
+            type="button"
+            className={serviceForm.pricingType === 'Variable' ? 'active' : ''}
+            onClick={() => setServiceForm(p => ({ ...p, pricingType: 'Variable' }))}
+          >
+            Variable
+          </button>
+        </div>
+      </div>
+
+      {/* Image Upload */}
       <input
         type="file"
         accept="image/*"
@@ -646,6 +829,7 @@ const handleAddService = async () => {
         </div>
       )}
 
+      {/* Actions */}
       <div className="chart-modal-actions">
         <button onClick={() => setShowServiceModal(false)}>Cancel</button>
         <button onClick={handleAddService}>
@@ -655,6 +839,64 @@ const handleAddService = async () => {
     </div>
   </div>
 )}
+
+{showStaffModal && (
+  <div className="chart-modal">
+    <div className="chart-modal-content">
+      <h2>{editingStaff ? 'Edit Staff / Receptionist' : 'Add Staff / Receptionist'}</h2>
+
+      <input
+        name="firstName"
+        placeholder="First Name"
+        value={staffForm.firstName}
+        onChange={handleStaffInputChange}
+      />
+
+      <input
+        name="lastName"
+        placeholder="Last Name"
+        value={staffForm.lastName}
+        onChange={handleStaffInputChange}
+      />
+
+      <input
+        name="email"
+        type="email"
+        placeholder="Email"
+        value={staffForm.email}
+        onChange={handleStaffInputChange}
+      />
+
+      <input
+        name="password"
+        type="password"
+        placeholder="Password"
+        value={staffForm.password}
+        onChange={handleStaffInputChange}
+      />
+
+      <select name="role" value={staffForm.role} onChange={handleStaffInputChange}>
+        <option value="Staff">Staff</option>
+        <option value="Receptionist">Receptionist</option>
+      </select>
+
+      <select name="branch" value={staffForm.branch} onChange={handleStaffInputChange}>
+        <option value="">-- Select Branch --</option>
+        <option value="Colombo Grand">Colombo Grand</option>
+        <option value="Hilltop Retreat">Hilltop Retreat</option>
+        <option value="Ocean Pearl Resort">Ocean Pearl Resort</option>
+        <option value="Royal Heritage">Royal Heritage</option>
+      </select>
+
+      <div className="chart-modal-actions">
+        <button onClick={() => setShowStaffModal(false)}>Cancel</button>
+        <button onClick={handleAddStaff}>{editingStaff ? 'Update' : 'Add'}</button>
+      </div>
+    </div>
+  </div>
+)}
+
+
 
 
 {showAssignModal && (

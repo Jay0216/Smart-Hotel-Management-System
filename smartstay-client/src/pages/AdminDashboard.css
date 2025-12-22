@@ -384,3 +384,33 @@
 .chart-modal-actions button:first-child:hover {
   background: #4b5563;
 }
+
+
+.pricing-type-group label {
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+  display: block;
+  text-align: center;
+}
+
+.pricing-options {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 20px;
+}
+
+.pricing-options button {
+  flex: 1;
+  padding: 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f9fafb;
+  cursor: pointer;
+}
+
+.pricing-options button.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+

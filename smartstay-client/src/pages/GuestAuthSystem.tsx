@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, User, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../redux/store';
-import { registerGuestThunk, loginGuestThunk, logout } from '../redux/guestSlice';
+import { registerGuestThunk, loginGuestThunk } from '../redux/guestSlice';
 import './GuestAuth.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -114,15 +114,13 @@ const handleRegister = async () => {
     setLoginPassword('');
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    setMessage(null);
-    setLoginEmail('');
-  };
+  
 
   useEffect(() => {
+    console.log('Current Guest:', currentGuest?.role);
     if (currentGuest) {
       setMessage({ type: 'success', text: `Welcome, ${currentGuest.firstName}! Redirecting...` });
+
 
       const timer = setTimeout(() => {
         navigate('/guestdashboard');

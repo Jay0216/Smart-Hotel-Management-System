@@ -15,6 +15,10 @@ import ReceptionistDashboard from './pages/ReceptionistDashboard.tsx'
 import { Provider } from 'react-redux';
 // @ts-ignore
 import { store } from './redux/store.js'
+import StaffLogin from './pages/StaffLogin.tsx'
+import StaffProtectedRoute from './StaffProtectedRoute.tsx'
+import ReceptionistProtectedRoute from './ReceptionProtectedRoute.tsx'
+import GuestProtectedRoute from './GuestProtectedRoute.tsx'
 
 const routes = createBrowserRouter([
 
@@ -36,8 +40,12 @@ const routes = createBrowserRouter([
   },
 
   {
-    path: "/guestdashboard",
-    element: <GuestDashboard/>
+    path: '/guestdashboard',
+    element: (
+    <GuestProtectedRoute>
+      <GuestDashboard />
+    </GuestProtectedRoute>
+  ),
   },
 
   {
@@ -47,12 +55,25 @@ const routes = createBrowserRouter([
 
   {
     path: "/staffdashboard",
-    element: <StaffDashboard/>
+    element: (
+      <StaffProtectedRoute>
+        <StaffDashboard />
+      </StaffProtectedRoute>
+    )
   },
 
   {
     path: "/receptionistdashboard",
-    element: <ReceptionistDashboard/>
+    element: (
+    <ReceptionistProtectedRoute>
+      <ReceptionistDashboard />
+    </ReceptionistProtectedRoute>
+  )
+  },
+
+  {
+    path: "/stafflogin",
+    element: <StaffLogin/>
   }
 ])
 

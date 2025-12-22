@@ -1,28 +1,29 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { loginReceptionist, registerReceptionist } from '../API/receptionistAPI';
-import type { AuthResponse, RegisterPayload, LoginPayload } from '../API/hotelStaffAuthTypes';
+import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import { registerReceptionist, loginReceptionist } from '../API/receptionistAPI';
+import type { RegisterPayload, LoginPayload, AuthResponse } from '../API/hotelStaffAuthTypes';
 
-interface AuthState {
-  user: AuthResponse['user'] | null;
+interface ReceptionistState {
+  currentReceptionist: AuthResponse['user'] | null;
   token: string | null;
   loading: boolean;
   error: string | null;
 }
 
-const initialState: AuthState = {
-  user: null,
-  token: null,
+const initialState: ReceptionistState = {
+  currentReceptionist: JSON.parse(localStorage.getItem('receptionistUser') || 'null'),
+  token: localStorage.getItem('receptionistToken'),
   loading: false,
   error: null,
 };
 
-export const receptionistRegisterThunk = createAsyncThunk<AuthResponse, RegisterPayload>(
+// ---- Thunks ----
+export const receptionistRegisterThunk = createAsyncThunk<void, RegisterPayload>(
   'receptionist/register',
   async (data, { rejectWithValue }) => {
     try {
-      return await registerReceptionist(data);
+      await registerReceptionist(data);
     } catch (err: any) {
-      return rejectWithValue(err.message || 'Registration failed');
+      return rejectWithValue(err.message || 'Receptionist registration failed');
     }
   }
 );
@@ -33,30 +34,67 @@ export const receptionistLoginThunk = createAsyncThunk<AuthResponse, LoginPayloa
     try {
       return await loginReceptionist(data);
     } catch (err: any) {
-      return rejectWithValue(err.message || 'Login failed');
+      return rejectWithValue(err.message || 'Receptionist login failed');
     }
   }
 );
 
+// ---- Slice ----
 const receptionistSlice = createSlice({
   name: 'receptionist',
   initialState,
   reducers: {
-    logout: (state) => {
-      state.user = null;
+    receptionistLogout: (state) => {
+      state.currentReceptionist = null;
       state.token = null;
+      state.error = null;
+      state.loading = false;
+      localStorage.removeItem('receptionistToken');
+      localStorage.removeItem('receptionistUser');
+    },
+    setReceptionistFromStorage: (
+      state,
+      action: PayloadAction<{ user: AuthResponse['user']; token: string }>
+    ) => {
+      state.currentReceptionist = action.payload.user;
+      state.token = action.payload.token;
     },
   },
   extraReducers: (builder) => {
     builder
+      // REGISTER
+      .addCase(receptionistRegisterThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(receptionistRegisterThunk.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(receptionistRegisterThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // LOGIN
       .addCase(receptionistLoginThunk.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
-      .addCase(receptionistLoginThunk.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-      })
+      .addCase(
+        receptionistLoginThunk.fulfilled,
+        (state, action: PayloadAction<AuthResponse>) => {
+          state.loading = false;
+          state.currentReceptionist = action.payload.user;
+          state.token = action.payload.token;
+
+          // Store in localStorage
+          localStorage.setItem('receptionistToken', action.payload.token);
+          localStorage.setItem(
+            'receptionistUser',
+            JSON.stringify(action.payload.user)
+          );
+        }
+      )
       .addCase(receptionistLoginThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
@@ -64,5 +102,7 @@ const receptionistSlice = createSlice({
   },
 });
 
-export const { logout } = receptionistSlice.actions;
+export const { receptionistLogout, setReceptionistFromStorage } =
+  receptionistSlice.actions;
 export default receptionistSlice.reducer;
+

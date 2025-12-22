@@ -11,17 +11,18 @@ interface StaffState {
 }
 
 const initialState: StaffState = {
-  currentStaff: null,
-  token: null,
+  currentStaff: JSON.parse(localStorage.getItem('staffUser') || 'null'),
+  token: localStorage.getItem('staffToken'),
   loading: false,
   error: null,
 };
 
+// ---- Thunks ----
 export const staffRegisterThunk = createAsyncThunk<void, RegisterPayload>(
   'staff/register',
   async (data, { rejectWithValue }) => {
     try {
-      await registerStaff(data); // ⬅️ ignore response
+      await registerStaff(data);
     } catch (err: any) {
       return rejectWithValue(err.message || 'Staff registration failed');
     }
@@ -39,6 +40,7 @@ export const staffLoginThunk = createAsyncThunk<AuthResponse, LoginPayload>(
   }
 );
 
+// ---- Slice ----
 const staffSlice = createSlice({
   name: 'staff',
   initialState,
@@ -48,11 +50,17 @@ const staffSlice = createSlice({
       state.token = null;
       state.error = null;
       state.loading = false;
+      localStorage.removeItem('staffToken');
+      localStorage.removeItem('staffUser');
+    },
+    setStaffFromStorage: (state, action: PayloadAction<{ user: AuthResponse['user']; token: string }>) => {
+      state.currentStaff = action.payload.user;
+      state.token = action.payload.token;
     },
   },
   extraReducers: (builder) => {
     builder
-      // REGISTER (NO LOGIN)
+      // REGISTER
       .addCase(staffRegisterThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -65,7 +73,7 @@ const staffSlice = createSlice({
         state.error = action.payload as string;
       })
 
-      // LOGIN (ONLY PLACE WE AUTH)
+      // LOGIN
       .addCase(staffLoginThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -74,6 +82,10 @@ const staffSlice = createSlice({
         state.loading = false;
         state.currentStaff = action.payload.user;
         state.token = action.payload.token;
+
+        // Store in localStorage
+        localStorage.setItem('staffToken', action.payload.token);
+        localStorage.setItem('staffUser', JSON.stringify(action.payload.user));
       })
       .addCase(staffLoginThunk.rejected, (state, action) => {
         state.loading = false;
@@ -82,5 +94,5 @@ const staffSlice = createSlice({
   },
 });
 
-export const { staffLogout } = staffSlice.actions;
+export const { staffLogout, setStaffFromStorage } = staffSlice.actions;
 export default staffSlice.reducer;

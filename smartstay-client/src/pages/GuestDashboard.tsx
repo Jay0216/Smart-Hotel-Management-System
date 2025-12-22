@@ -3,7 +3,6 @@ import { Bell, User, Bed, Settings, ClipboardList, Box } from 'lucide-react';
 import type { RootState, AppDispatch } from '../redux/store';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../redux/guestSlice';
 import './GuestDashboard.css';
 
 interface Booking {
@@ -28,7 +27,7 @@ const GuestDashboard: React.FC = () => {
     { id: '1', text: 'Your room booking is confirmed.', type: 'success', timestamp: '2025-12-15 10:00' },
     { id: '2', text: 'New housekeeping service available.', type: 'info', timestamp: '2025-12-15 12:30' }
   ]);
-  const { currentGuest, token } = useSelector((state: RootState) => state.guest);
+  const { currentGuest } = useSelector((state: RootState) => state.guest);
   const [showNotifications, setShowNotifications] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -38,11 +37,7 @@ const GuestDashboard: React.FC = () => {
     { id: 'b2', room: 'Suite 301', status: 'Checked-in', checkIn: '2025-12-10', checkOut: '2025-12-15' }
   ]);
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/guestauth'); // redirect if no token
-    }
-  }, [token, navigate]);
+  
 
   return (
     <div className="guest-dashboard-page">
