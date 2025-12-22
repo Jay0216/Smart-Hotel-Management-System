@@ -1,34 +1,45 @@
 import { pool } from '../dbconnection.js';
 
-// Create a service
+// Create a service with branch_id lookup
 export const createService = async ({
   branchName,
+  country,
   name,
   category,
   price,
-  pricingType,
-  availability
+  pricingType
 }) => {
+  // 1. Check branch exists with name + country
+  const branchQuery = `
+    SELECT id FROM branches WHERE name=$1 AND country=$2 LIMIT 1
+  `;
+  const { rows: branchRows } = await pool.query(branchQuery, [branchName, country]);
+
+  if (branchRows.length === 0) {
+    throw new Error(`Branch "${branchName}" in "${country}" does not exist`);
+  }
+
+  const branchId = branchRows[0].id;
+
+  // 2. Insert service
   const query = `
     INSERT INTO services (
-      branch_name,
+      branch_id,
       name,
       category,
       price,
-      pricing_type,
-      availability
+      pricing_type
     )
-    VALUES ($1, $2, $3, $4, $5, $6)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *
   `;
 
   const values = [
-    branchName,
+    branchId,
     name,
     category || null,
     price,
-    pricingType || 'Fixed',
-    availability || 'Available'
+    pricingType || 'Fixed'
   ];
 
   const { rows } = await pool.query(query, values);
@@ -48,17 +59,21 @@ export const addServiceImages = async (serviceId, images = []) => {
     await pool.query(query, [
       serviceId,
       images[i],
-      i === 0 // first image is primary
+      i === 0 // first image primary
     ]);
   }
 };
 
-// Get all services with optional images
+// Get all services with branch name
 export const getAllServices = async () => {
-  const servicesQuery = `SELECT * FROM services ORDER BY created_at DESC`;
+  const servicesQuery = `
+    SELECT s.*, b.name as branch_name, b.country
+    FROM services s
+    JOIN branches b ON s.branch_id = b.id
+    ORDER BY s.created_at DESC
+  `;
   const { rows: services } = await pool.query(servicesQuery);
 
-  // Fetch images for each service
   const servicesWithImages = await Promise.all(
     services.map(async (s) => {
       const { rows: images } = await pool.query(
@@ -71,6 +86,7 @@ export const getAllServices = async () => {
 
   return servicesWithImages;
 };
+
 
 
 

@@ -81,6 +81,7 @@ export const loginGuest = async (req, res) => {
         lastName: guest.last_name,
         email: guest.email,
         imageUrl: guest.image_url,
+        role: 'guest',
       },
     });
   } catch {

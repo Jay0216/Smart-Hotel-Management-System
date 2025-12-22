@@ -1,9 +1,10 @@
 import express from 'express';
-import { loginStaff, registerStaff } from '../controllers/staff.controller.js';
+import { fetchAllStaff, loginStaff, registerStaff } from '../controllers/staff.controller.js';
 
 const router = express.Router();
 
 router.post('/staffregister', registerStaff);
 router.post('/stafflogin', loginStaff);
+router.get('/getstaff', fetchAllStaff);
 
 export default router;

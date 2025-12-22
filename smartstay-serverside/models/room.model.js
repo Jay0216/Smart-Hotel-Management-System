@@ -1,7 +1,21 @@
 import { pool } from '../dbconnection.js';
 
+/**
+ * Find branch id using name + country
+ */
+export const getBranchIdByNameAndCountry = async (branchName, country) => {
+  const query = `
+    SELECT id
+    FROM branches
+    WHERE name = $1 AND country = $2
+    LIMIT 1
+  `;
+  const { rows } = await pool.query(query, [branchName, country]);
+  return rows[0]?.id;
+};
+
 export const createRoom = async ({
-  branchName,
+  branchId,
   roomName,
   roomType,
   price,
@@ -10,7 +24,7 @@ export const createRoom = async ({
 }) => {
   const query = `
     INSERT INTO rooms (
-      branch_name,
+      branch_id,
       room_name,
       room_type,
       price,
@@ -22,7 +36,7 @@ export const createRoom = async ({
   `;
 
   const values = [
-    branchName,
+    branchId,
     roomName,
     roomType,
     price,
@@ -46,23 +60,32 @@ export const addRoomImages = async (roomId, images = []) => {
     await pool.query(query, [
       roomId,
       images[i],
-      i === 0 // first image primary
+      i === 0
     ]);
   }
 };
 
 export const getAllRooms = async () => {
   const query = `
-    SELECT r.id, r.branch_name AS hotel, r.room_name AS name, r.room_type AS type,
-           r.price, r.capacity, r.status,
-           ARRAY_AGG(ri.image_url) AS images
+    SELECT
+      r.id,
+      b.name AS branch_name,
+      b.country,
+      r.room_name,
+      r.room_type,
+      r.price,
+      r.capacity,
+      r.status,
+      COALESCE(ARRAY_AGG(ri.image_url) FILTER (WHERE ri.image_url IS NOT NULL), '{}') AS images
     FROM rooms r
+    JOIN branches b ON b.id = r.branch_id
     LEFT JOIN room_images ri ON ri.room_id = r.id
-    GROUP BY r.id
-    ORDER BY r.id
+    GROUP BY r.id, b.name, b.country
+    ORDER BY r.id DESC
   `;
-  
+
   const { rows } = await pool.query(query);
   return rows;
 };
+
 

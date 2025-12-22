@@ -1,52 +1,44 @@
 import bcrypt from 'bcrypt';
 import { generateToken } from '../utils/jwt.js';
-import { pool } from '../dbconnection.js';
-import { findStaffByEmail } from '../models/staff.model.js';
+import { createStaff, findStaffByEmail, findBranchByName, getAllStaff } from '../models/staff.model.js';
 
 export const registerStaff = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, imageUrl } = req.body;
+    const { firstName, lastName, email, password, branch } = req.body;
 
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !email || !password || !branch) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // hash password
+    // Find branch ID
+    const branchRow = await findBranchByName(branch);
+
+    console.log('Branch lookup result:', branchRow);
+    if (!branchRow) {
+      return res.status(400).json({ message: 'Invalid branch name' });
+    }
+    const branchId = branchRow.id;
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const query = `
-      INSERT INTO staff (
-        first_name,
-        last_name,
-        email,
-        password,
-        image_url
-      )
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING staff_id, first_name, last_name, email, image_url
-    `;
-
-    const values = [
+    // Create staff
+    const staff = await createStaff({
       firstName,
       lastName,
       email,
-      hashedPassword,
-      imageUrl || null
-    ];
-
-    const result = await pool.query(query, values);
+      password: hashedPassword,
+      branchId,
+    });
 
     res.status(201).json({
       message: 'Registration successful',
-      user: result.rows[0]
+      user: staff
     });
 
   } catch (error) {
     console.error('REGISTER ERROR 👉', error.message);
-    res.status(500).json({
-      message: 'Registration failed',
-      error: error.message // keep only during development
-    });
+    res.status(500).json({ message: 'Registration failed', error: error.message });
   }
 };
 
@@ -64,9 +56,6 @@ export const loginStaff = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    console.log("Staff from DB:", staff);
-    console.log("Compare result:", await bcrypt.compare(password, staff.password));
-
     const token = generateToken({
       staffId: staff.staff_id,
       email: staff.email,
@@ -81,10 +70,23 @@ export const loginStaff = async (req, res) => {
         lastName: staff.last_name,
         email: staff.email,
         role: 'staff',
-        imageUrl: staff.image_url,
       },
     });
   } catch {
     res.status(500).json({ message: 'Login failed' });
   }
 };
+
+
+// Get all staff
+export const fetchAllStaff = async (req, res) => {
+  try {
+    const staffList = await getAllStaff();
+    console.log('Fetched staff list:', staffList);
+    res.status(200).json({ staffList });
+  } catch (err) {
+    console.error('FETCH STAFF ERROR 👉', err.message);
+    res.status(500).json({ message: 'Failed to fetch staff', error: err.message });
+  }
+};
+

@@ -1,52 +1,44 @@
 import bcrypt from 'bcrypt';
 import { generateToken } from '../utils/jwt.js';
-import { pool } from '../dbconnection.js';
-import { findReceptionistByEmail } from '../models/receptionist.model.js';
+import { createReceptionist, findReceptionistByEmail, findBranchByName, getAllReceptions } from '../models/receptionist.model.js';
 
 export const registerReceptionist = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, imageUrl } = req.body;
+    const { firstName, lastName, email, password, branch } = req.body;
 
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !email || !password || !branch) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // hash password
+    // Find branch ID
+    const branchRow = await findBranchByName(branch);
+
+    console.log('Branch lookup result:', branchRow);
+    if (!branchRow) {
+      return res.status(400).json({ message: 'Invalid branch name' });
+    }
+    const branchId = branchRow.id;
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const query = `
-      INSERT INTO receptionist (
-        first_name,
-        last_name,
-        email,
-        password,
-        image_url
-      )
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING receptionist_id, first_name, last_name, email, image_url
-    `;
-
-    const values = [
+    // Create receptionist
+    const receptionist = await createReceptionist({
       firstName,
       lastName,
       email,
-      hashedPassword,
-      imageUrl || null
-    ];
-
-    const result = await pool.query(query, values);
+      password: hashedPassword,
+      branchId,
+    });
 
     res.status(201).json({
       message: 'Registration successful',
-      user: result.rows[0]
+      user: receptionist
     });
 
   } catch (error) {
     console.error('REGISTER ERROR 👉', error.message);
-    res.status(500).json({
-      message: 'Registration failed',
-      error: error.message // keep only during development
-    });
+    res.status(500).json({ message: 'Registration failed', error: error.message });
   }
 };
 
@@ -64,11 +56,8 @@ export const loginReceptionist = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    console.log("Receptionist from DB:", receptionist);
-    console.log("Compare result:", await bcrypt.compare(password, receptionist.password));
-
     const token = generateToken({
-      receptionistId: receptionist.receptionist_id,
+      staffId: receptionist.receptionist_id,
       email: receptionist.email,
       role: 'receptionist',
     });
@@ -81,10 +70,22 @@ export const loginReceptionist = async (req, res) => {
         lastName: receptionist.last_name,
         email: receptionist.email,
         role: 'receptionist',
-        imageUrl: receptionist.image_url,
       },
     });
   } catch {
     res.status(500).json({ message: 'Login failed' });
   }
 };
+
+
+// Get all receptionists
+export const fetchAllReceptions = async (req, res) => {
+  try {
+    const receptionsList = await getAllReceptions();
+    res.status(200).json({ receptionsList });
+  } catch (err) {
+    console.error('FETCH RECEPTIONISTS ERROR 👉', err.message);
+    res.status(500).json({ message: 'Failed to fetch receptionists ', error: err.message });
+  }
+};
+

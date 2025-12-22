@@ -8,6 +8,7 @@ import receptionistRoutes from './routes/receptionist.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import roomRoutes from './routes/room.routes.js';
 import serviceRoutes from './routes/service.routes.js';
+import staffUsersRoutes from './routes/staffusers.routes.js';
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/receptionist', receptionistRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api', staffUsersRoutes);
 
 app.get('/', (req, res) => {
   res.send('SmartStay Hotel Server side');
