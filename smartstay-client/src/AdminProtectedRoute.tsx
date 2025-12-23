@@ -16,12 +16,12 @@ const AdminProtectedRoute: React.FC<Props> = ({ children }) => {
   // Auto-logout if token is expired
   if (token && isTokenExpired(token)) {
     dispatch(adminLogout());
-    return <Navigate to="/admin-login" replace />;
+    return <Navigate to="/adminauth" replace />;
   }
 
   // Redirect if not logged in or role mismatch
   if (!token || !currentAdmin || currentAdmin.role !== 'admin') {
-    return <Navigate to="/admin-login" replace />;
+    return <Navigate to="/adminauth" replace />;
   }
 
   return children;

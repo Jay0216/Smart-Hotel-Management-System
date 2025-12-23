@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, User, Bed, Settings, ClipboardList, Box } from 'lucide-react';
+import { Bell, User, Bed, Settings, ClipboardList, Box, MapPin } from 'lucide-react';
 import type { RootState, AppDispatch } from '../redux/store';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +20,14 @@ interface Notification {
   timestamp: string;
 }
 
+interface Room {
+  id: string;
+  name: string;
+  image: string;
+  price: string;
+  location: string;
+}
+
 const GuestDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'bookings' | 'services' | 'profile'>('dashboard');
@@ -36,6 +44,56 @@ const GuestDashboard: React.FC = () => {
     { id: 'b1', room: 'Deluxe Room 101', status: 'Booked', checkIn: '2025-12-20', checkOut: '2025-12-22' },
     { id: 'b2', room: 'Suite 301', status: 'Checked-in', checkIn: '2025-12-10', checkOut: '2025-12-15' }
   ]);
+
+
+  const featuredRoom = {
+    name: 'Presidential Suite',
+    image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800',
+    location: 'Kandy, Sri Lanka',
+    description: 'Luxury suite with panoramic city views',
+    price: '$450/night',
+    amenities: ['King Bed', 'Ocean View', 'Private Balcony', 'Spa Bath']
+  };
+
+  const rooms: Room[] = [
+    { id: '1', name: 'Deluxe Room', image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400', price: '$180/night', location: 'Kandy' },
+    { id: '2', name: 'Executive Suite', image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400', price: '$320/night', location: 'Kandy' },
+    { id: '3', name: 'Garden Villa', image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400', price: '$280/night', location: 'Kandy' },
+    { id: '4', name: 'Pool View Room', image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400', price: '$220/night', location: 'Kandy' }
+  ];
+
+  const services = [
+    { id: '1', name: 'Spa Service', icon: '💆', description: 'Relaxing massage' },
+    { id: '2', name: 'Fine Dining', icon: '🍽️', description: 'Gourmet meals' },
+    { id: '3', name: 'Airport Shuttle', icon: '🚐', description: '24/7 transport' },
+    { id: '4', name: 'Concierge', icon: '🛎️', description: 'Personal assistance' }
+  ];
+
+  const billingSummary = {
+    roomCharges: 450.00,
+    serviceCharges: 120.00,
+    tax: 57.00,
+    total: 627.00
+  };
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % Math.ceil(rooms.length / getItemsPerSlide()));
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + Math.ceil(rooms.length / getItemsPerSlide())) % Math.ceil(rooms.length / getItemsPerSlide()));
+  };
+
+  const getItemsPerSlide = () => {
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth < 640) return 1;
+      if (window.innerWidth < 1024) return 2;
+      return 3;
+    }
+    return 3;
+  };
 
   
 
@@ -108,28 +166,103 @@ const GuestDashboard: React.FC = () => {
         {/* Dashboard Body */}
         <div className="dashboard-body">
           {activeTab==='dashboard' && (
-            <div className="cards-grid">
-              <div className="card">
-                <h3>Upcoming Bookings</h3>
-                {bookings.filter(b => b.status === 'Booked').map(b => (
-                  <div key={b.id} className="booking-card">
-                    <strong>{b.room}</strong>
-                    <p>{b.checkIn} - {b.checkOut}</p>
-                  </div>
-                ))}
-                {bookings.filter(b => b.status === 'Booked').length === 0 && <p>No upcoming bookings</p>}
+            <div className="dashboard-enhanced">
+
+    {/* Featured + Billing */}
+    <div className="featured-section">
+
+      {/* Featured Room */}
+      <div className="featured-card">
+        <div className="featured-image-wrapper">
+          <img src={featuredRoom.image} className="featured-image" />
+          <div className="featured-overlay">
+            <div className="featured-location">
+              <MapPin size={18} />
+              <span>{featuredRoom.location}</span>
+            </div>
+            <h2 className="featured-title">{featuredRoom.name}</h2>
+            <p className="featured-desc">{featuredRoom.description}</p>
+
+            <div className="featured-amenities">
+              {featuredRoom.amenities.map((a, i) => (
+                <span key={i} className="amenity-tag">{a}</span>
+              ))}
+            </div>
+
+            <div className="featured-footer">
+              <span className="featured-price">{featuredRoom.price}</span>
+              <button className="book-now-btn">Book Now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Billing */}
+      <div className="billing-card">
+        <h3 className="billing-title">Billing Summary</h3>
+
+        <div className="billing-item">
+          <span>Room Charges</span>
+          <span>${billingSummary.roomCharges}</span>
+        </div>
+        <div className="billing-item">
+          <span>Service Charges</span>
+          <span>${billingSummary.serviceCharges}</span>
+        </div>
+        <div className="billing-item">
+          <span>Tax</span>
+          <span>${billingSummary.tax}</span>
+        </div>
+
+        <div className="billing-divider"></div>
+
+        <div className="billing-total">
+          <span>Total</span>
+          <span>${billingSummary.total}</span>
+        </div>
+
+        <button className="pay-btn">Pay Now</button>
+      </div>
+
+    </div>
+
+    {/* Rooms Slider */}
+    <div className="slider-section">
+      <h3 className="section-title">Other Rooms & Suites</h3>
+
+      <div className="slider-track">
+        {rooms.map(room => (
+          <div key={room.id} className="room-card">
+            <img src={room.image} className="room-image" />
+            <div className="room-info">
+              <h4 className="room-name">{room.name}</h4>
+              <div className="room-location">
+                <MapPin size={14} />
+                <span>{room.location}</span>
               </div>
-              <div className="card">
-                <h3>Checked-in Rooms</h3>
-                {bookings.filter(b => b.status === 'Checked-in').map(b => (
-                  <div key={b.id} className="booking-card">
-                    <strong>{b.room}</strong>
-                    <p>{b.checkIn} - {b.checkOut}</p>
-                  </div>
-                ))}
-                {bookings.filter(b => b.status === 'Checked-in').length === 0 && <p>No active stays</p>}
+              <div className="room-footer">
+                <span className="room-price">{room.price}</span>
+                <button className="view-btn">View</button>
               </div>
             </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Services */}
+    <div className="services-grid">
+      {services.map(s => (
+        <div key={s.id} className="service-card">
+          <div className="service-icon">{s.icon}</div>
+          <h4 className="service-name">{s.name}</h4>
+          <p className="service-desc">{s.description}</p>
+          <button className="request-btn">Request</button>
+        </div>
+      ))}
+    </div>
+
+  </div>
           )}
 
           {activeTab==='bookings' && (
