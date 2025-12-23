@@ -1,0 +1,10 @@
+# Ignore environment files
+.env
+
+# Ignore config files with secrets
+config.json
+
+# Ignore node_modules (if Node.js project)
+node_modules/
+
+

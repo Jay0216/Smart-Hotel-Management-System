@@ -31,7 +31,10 @@ export const addRoom = async (req, res) => {
 
     // 🖼️ Add images
     if (req.files && req.files.length > 0) {
-      const imagePaths = req.files.map(file => file.path);
+      const imagePaths = req.files.map(file =>
+        `/${file.path.replace(/\\/g, '/')}`
+      );
+
       await addRoomImages(room.id, imagePaths);
     }
 
