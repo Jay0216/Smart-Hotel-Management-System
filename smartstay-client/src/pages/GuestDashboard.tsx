@@ -4,6 +4,9 @@ import type { RootState, AppDispatch } from '../redux/store';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import './GuestDashboard.css';
+import { fetchRoomsAsync } from '../redux/roomSlice';
+import { addBooking } from '../redux/bookingSlice'; // replace with actual path
+
 
 interface Booking {
   id: string;
@@ -20,15 +23,23 @@ interface Notification {
   timestamp: string;
 }
 
-interface Room {
+export interface LocalRoom {
   id: string;
-  name: string;
-  image: string;
-  price: string;
-  location: string;
+  branch_name: string;
+  country: string;
+  room_name: string;
+  room_type: string;
+  price: string;      // API sends string
+  capacity: number;
+  status: 'Available' | 'Booked' | 'Unavailable';
+  images: string[];
 }
 
 const GuestDashboard: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+
+
+  
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'bookings' | 'services' | 'profile'>('dashboard');
   const [notifications, setNotifications] = useState<Notification[]>([
@@ -46,21 +57,21 @@ const GuestDashboard: React.FC = () => {
   ]);
 
 
-  const featuredRoom = {
-    name: 'Presidential Suite',
-    image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800',
-    location: 'Kandy, Sri Lanka',
-    description: 'Luxury suite with panoramic city views',
-    price: '$450/night',
-    amenities: ['King Bed', 'Ocean View', 'Private Balcony', 'Spa Bath']
-  };
+  //const featuredRoom = {
+    //name: 'Presidential Suite',
+    //image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800',
+    //location: 'Kandy, Sri Lanka',
+    //description: 'Luxury suite with panoramic city views',
+    //price: '$450/night',
+    //amenities: ['King Bed', 'Ocean View', 'Private Balcony', 'Spa Bath']
+  //};
 
-  const rooms: Room[] = [
-    { id: '1', name: 'Deluxe Room', image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400', price: '$180/night', location: 'Kandy' },
-    { id: '2', name: 'Executive Suite', image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400', price: '$320/night', location: 'Kandy' },
-    { id: '3', name: 'Garden Villa', image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400', price: '$280/night', location: 'Kandy' },
-    { id: '4', name: 'Pool View Room', image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400', price: '$220/night', location: 'Kandy' }
-  ];
+  //const localrooms: LocalRoom[] = [
+    //{ id: '1', name: 'Deluxe Room', image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400', price: '$180/night', location: 'Kandy' },
+   // { id: '2', name: 'Executive Suite', image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400', price: '$320/night', location: 'Kandy' },
+    //{ id: '3', name: 'Garden Villa', image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400', price: '$280/night', location: 'Kandy' },
+   // { id: '4', name: 'Pool View Room', image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400', price: '$220/night', location: 'Kandy' }
+  //];
 
   const services = [
     { id: '1', name: 'Spa Service', icon: '💆', description: 'Relaxing massage' },
@@ -76,15 +87,15 @@ const GuestDashboard: React.FC = () => {
     total: 627.00
   };
 
-  const [currentSlide, setCurrentSlide] = useState(0);
+  //const [currentSlide, setCurrentSlide] = useState(0);
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % Math.ceil(rooms.length / getItemsPerSlide()));
-  };
+  //const nextSlide = () => {
+    //setCurrentSlide((prev) => (prev + 1) % Math.ceil(localrooms.length / getItemsPerSlide()));
+  //};
 
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + Math.ceil(rooms.length / getItemsPerSlide())) % Math.ceil(rooms.length / getItemsPerSlide()));
-  };
+  //const prevSlide = () => {
+    //setCurrentSlide((prev) => (prev - 1 + Math.ceil(localrooms.length / getItemsPerSlide())) % Math.ceil(localrooms.length / getItemsPerSlide()));
+ // };
 
   const getItemsPerSlide = () => {
     if (typeof window !== 'undefined') {
@@ -94,6 +105,115 @@ const GuestDashboard: React.FC = () => {
     }
     return 3;
   };
+
+  const { rooms, loading } = useSelector((state: RootState) => state.rooms);
+
+
+
+  useEffect(() => {
+   dispatch(fetchRoomsAsync());
+  }, [dispatch]);
+
+  const featuredRoom = rooms.length > 0 ? rooms[0] : null;
+  const otherRooms = rooms.slice(1);
+
+  const rawImage = featuredRoom?.images?.[0];
+
+  const getRoomImageUrl = (room: typeof featuredRoom, index = 0) => {
+    if (!room?.images || !room.images[index]) return 'https://via.placeholder.com/800';
+    return `http://localhost:3000${room.images[index]}`;
+  };
+
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<LocalRoom | typeof featuredRoom | null>(null);
+
+// Booking form state
+const [bookingForm, setBookingForm] = useState({
+  firstName: '',
+  lastName: '',
+  email: '',
+  contact: '',
+  idNumber: '',
+  additionalNote: '',
+  guests: '',      // new field
+  nights: ''
+});
+
+// Handlers
+const openBookingModal = (room: LocalRoom | typeof featuredRoom) => {
+  setSelectedRoom(room);
+  setShowBookingModal(true);
+};
+
+const closeBookingModal = () => {
+  setShowBookingModal(false);
+  setSelectedRoom(null);
+  setBookingForm({
+    firstName: '',
+    lastName: '',
+    email: '',
+    contact: '',
+    idNumber: '',
+    additionalNote: '',
+    guests: '',      // new field
+    nights: ''       
+    
+  });
+};
+
+const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  setBookingForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+};
+
+
+
+const [fullImage, setFullImage] = useState<string | null>(null);
+
+// inside GuestDashboard component, replace handleBookingSubmit
+const handleBookingSubmit = async () => {
+  if (!selectedRoom) return;
+
+  // Validate required fields
+  const { firstName, lastName, email, contact, guests, nights } = bookingForm;
+  if (!firstName || !lastName || !email || !contact || !guests || !nights) {
+    alert('Please fill all required fields.');
+    return;
+  }
+
+  // Prepare booking payload
+  const bookingData = {
+    room_id: selectedRoom.id,
+    branch_name: selectedRoom.branch_name,
+    guest_id: currentGuest?.id, // use current logged-in guest
+    first_name: firstName,
+    last_name: lastName,
+    email,
+    contact,
+    id_number: bookingForm.idNumber || null,
+    guests: Number(guests),
+    nights: Number(nights),
+    additional_note: bookingForm.additionalNote || null
+  };
+
+  try {
+    // Dispatch Redux action to add booking
+    const resultAction = await dispatch(addBooking(bookingData));
+    
+    if (addBooking.fulfilled.match(resultAction)) {
+      alert('Booking created successfully!');
+      
+      
+      closeBookingModal();
+    } else {
+      alert('Failed to create booking: ' + resultAction.error.message);
+    }
+  } catch (error) {
+    console.error('Booking error 👉', error);
+    alert('Something went wrong while creating the booking.');
+  }
+};
+
+
 
   
 
@@ -172,30 +292,99 @@ const GuestDashboard: React.FC = () => {
     <div className="featured-section">
 
       {/* Featured Room */}
-      <div className="featured-card">
-        <div className="featured-image-wrapper">
-          <img src={featuredRoom.image} className="featured-image" />
-          <div className="featured-overlay">
-            <div className="featured-location">
-              <MapPin size={18} />
-              <span>{featuredRoom.location}</span>
-            </div>
-            <h2 className="featured-title">{featuredRoom.name}</h2>
-            <p className="featured-desc">{featuredRoom.description}</p>
+      {/* LOADING STATE */}
+  {loading && (
+    <div className="featured-card">
+      <div className="featured-image-wrapper">
+        <div className="featured-skeleton" />
+      </div>
+    </div>
+  )}
 
-            <div className="featured-amenities">
-              {featuredRoom.amenities.map((a, i) => (
-                <span key={i} className="amenity-tag">{a}</span>
-              ))}
-            </div>
+  {/* EMPTY STATE */}
+  {!loading && !featuredRoom && (
+    <div className="featured-card">
+      <div className="featured-image-wrapper">
+        <p style={{ padding: '2rem', textAlign: 'center' }}>
+          No rooms available
+        </p>
+      </div>
+    </div>
+  )}
 
-            <div className="featured-footer">
-              <span className="featured-price">{featuredRoom.price}</span>
-              <button className="book-now-btn">Book Now</button>
-            </div>
+  {/* SUCCESS STATE */}
+  {!loading && featuredRoom && (
+    <div className="featured-card">
+      <div className="featured-image-wrapper">
+        <img
+          src={getRoomImageUrl(featuredRoom)}
+          className="featured-image"
+          alt={featuredRoom.room_name}
+        />
+
+        <div className="featured-overlay">
+          {/* Location */}
+          <div className="featured-location">
+            <MapPin size={18} />
+            <span>
+              {featuredRoom.branch_name}, {featuredRoom.country}
+            </span>
+          </div>
+
+          {/* Room Name */}
+          <h2 className="featured-title">
+            {featuredRoom.room_name}
+          </h2>
+
+          {/* Description */}
+          <p className="featured-desc">
+            {featuredRoom.room_type} room designed for premium comfort
+          </p>
+
+          {/* TAGS */}
+          <div className="featured-amenities">
+            <span className="amenity-tag">
+              Capacity: {featuredRoom.capacity} Guests
+            </span>
+
+            <span className="amenity-tag">
+              Type: {featuredRoom.room_type}
+            </span>
+
+            <span
+              className="amenity-tag"
+              style={{
+                background:
+                  featuredRoom.status === 'Available'
+                    ? 'rgba(16,185,129,0.3)'
+                    : 'rgba(239,68,68,0.3)'
+              }}
+            >
+              {featuredRoom.status}
+            </span>
+          </div>
+
+          {/* Footer */}
+          <div className="featured-footer">
+            <span className="featured-price">
+              LKR {Number(featuredRoom.price).toLocaleString()} / night
+            </span>
+
+            <button
+              className="book-now-btn"
+              disabled={featuredRoom.status !== 'Available'}
+              onClick={() => openBookingModal(featuredRoom)}
+              
+            >
+              {featuredRoom.status === 'Available'
+                ? 'Book Now'
+                : 'Unavailable'}
+            </button>
           </div>
         </div>
       </div>
+    </div>
+  )}
 
       {/* Billing */}
       <div className="billing-card">
@@ -231,22 +420,24 @@ const GuestDashboard: React.FC = () => {
       <h3 className="section-title">Other Rooms & Suites</h3>
 
       <div className="slider-track">
-        {rooms.map(room => (
-          <div key={room.id} className="room-card">
-            <img src={room.image} className="room-image" />
-            <div className="room-info">
-              <h4 className="room-name">{room.name}</h4>
-              <div className="room-location">
-                <MapPin size={14} />
-                <span>{room.location}</span>
-              </div>
-              <div className="room-footer">
-                <span className="room-price">{room.price}</span>
-                <button className="view-btn">View</button>
-              </div>
-            </div>
-          </div>
-        ))}
+        {otherRooms.map(room => (
+    <div key={room.id} className="room-card">
+      <img src={getRoomImageUrl(room)} className="room-image" alt={room.room_name} />
+      <div className="room-info">
+        <h4 className="room-name">{room.room_name}</h4>
+        <div className="room-location">
+          <MapPin size={14} />
+          <span>{room.branch_name}, {room.country}</span>
+        </div>
+        <div className="room-footer">
+          <span className="room-price">
+            LKR {room.price.split(' ')[0]} <small>/ night</small>
+          </span>
+          <button className="view-btn" onClick={() => openBookingModal(room)}>View</button>
+        </div>
+      </div>
+    </div>
+  ))}
       </div>
     </div>
 
@@ -327,6 +518,169 @@ const GuestDashboard: React.FC = () => {
           )}
         </div>
       </main>
+{/* Full Image Popup */}
+{fullImage && (
+  <div
+    className="full-image-popup"
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      background: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 10000, // higher than booking modal
+    }}
+  >
+    {/* Close Icon */}
+    <button
+      onClick={() => setFullImage(null)}
+      style={{
+        position: 'absolute',
+        top: '20px',
+        right: '20px',
+        background: 'rgba(0,0,0,0.5)',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '50%',
+        width: '40px',
+        height: '40px',
+        cursor: 'pointer',
+        fontSize: '24px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10001,
+      }}
+    >
+      &times;
+    </button>
+
+    {/* Full Image */}
+    <img
+      src={fullImage}
+      alt="Full Room"
+      style={{
+        maxWidth: '90%',
+        maxHeight: '90%',
+        borderRadius: '8px',
+        boxShadow: '0 0 10px #000',
+        zIndex: 10000,
+      }}
+    />
+  </div>
+)}
+
+{/* Booking Modal */}
+{showBookingModal && selectedRoom && (
+  <div
+    className="booking-modal"
+  >
+    <div className="booking-modal-content">
+      <h2>Book: {selectedRoom.room_name}</h2>
+      <p>
+        Location: {selectedRoom.branch_name}, {selectedRoom.country}<br />
+        Price: LKR {Number(selectedRoom.price).toLocaleString()} / night
+      </p>
+
+      {/* Display all images of the room (max 5) */}
+      {selectedRoom.images && selectedRoom.images.length > 0 && (
+        <div className="modal-room-images">
+          {selectedRoom.images.slice(0, 5).map((img, idx) => (
+            <img
+              key={idx}
+              src={`http://localhost:3000${img}`}
+              alt={`${selectedRoom.room_name} ${idx + 1}`}
+              onClick={() => setFullImage(`http://localhost:3000${img}`)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Booking Form */}
+<div className="booking-form">
+  <input
+    type="text"
+    name="firstName"
+    placeholder="First Name"
+    value={bookingForm.firstName}
+    onChange={handleFormChange}
+  />
+  
+  <input
+    type="text"
+    name="lastName"
+    placeholder="Last Name"
+    value={bookingForm.lastName}
+    onChange={handleFormChange}
+  />
+  
+  <input
+    type="email"
+    name="email"
+    placeholder="Email"
+    value={bookingForm.email}
+    onChange={handleFormChange}
+  />
+  
+  <input
+    type="text"
+    name="contact"
+    placeholder="Contact Number"
+    value={bookingForm.contact}
+    onChange={handleFormChange}
+  />
+  
+  <input
+    type="text"
+    name="idNumber"
+    placeholder="Passport / NIC Number"
+    value={bookingForm.idNumber}
+    onChange={handleFormChange}
+  />
+
+  <input
+    type="number"
+    name="guests"
+    placeholder="Number of Guests"
+    min={1}
+    value={bookingForm.guests}
+    onChange={handleFormChange}
+  />
+
+  <input
+    type="number"
+    name="nights"
+    placeholder="Number of Nights"
+    min={1}
+    value={bookingForm.nights}
+    onChange={handleFormChange}
+  />
+  
+  <textarea
+    name="additionalNote"
+    placeholder="Additional Note"
+    value={bookingForm.additionalNote}
+    onChange={handleFormChange}
+  />
+</div>
+
+
+      <div className="booking-modal-actions">
+        <button onClick={handleBookingSubmit}>Confirm Booking</button>
+        <button onClick={closeBookingModal}>Cancel</button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
+
+
     </div>
   );
 };

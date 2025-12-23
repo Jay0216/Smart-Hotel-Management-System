@@ -20,6 +20,17 @@ import StaffProtectedRoute from './StaffProtectedRoute.tsx'
 import ReceptionistProtectedRoute from './ReceptionProtectedRoute.tsx'
 import GuestProtectedRoute from './GuestProtectedRoute.tsx'
 import AdminProtectedRoute from './AdminProtectedRoute.tsx'
+import PaymentPage from './pages/Payment.tsx'
+
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+
+// Stripe test key
+const stripePromise = loadStripe('pk_test_1234567890abcdef');
+
+const handlePaymentSuccess = () => {
+  alert('Payment Successful!');
+};
 
 const routes = createBrowserRouter([
 
@@ -79,7 +90,20 @@ const routes = createBrowserRouter([
   {
     path: "/stafflogin",
     element: <StaffLogin/>
-  }
+  },
+
+  {
+    path: '/payment',
+    element: (
+      <Elements stripe={stripePromise}>
+        <PaymentPage
+          bookingId="12345"
+          amount={1000}
+          onSuccess={handlePaymentSuccess} // <-- function assigned
+        />
+      </Elements>
+    ),
+  },
 ])
 
 createRoot(document.getElementById('root')!).render(

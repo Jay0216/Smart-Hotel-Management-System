@@ -12,15 +12,15 @@ export interface RoomFormData {
 
 
 export interface Room {
-  id: number;
-  branch_name: string;   // from branches table
+  id: string;
+  branch_name: string;
   country: string;
   room_name: string;
   room_type: string;
-  price: number;
+  price: string;      // API sends string
   capacity: number;
-  status: string;
-  images?: string[];
+  status: 'Available' | 'Booked' | 'Unavailable';
+  images: string[];
 }
 
 

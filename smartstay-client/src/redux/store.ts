@@ -7,6 +7,7 @@ import staffReducer from './staffSlice';
 import roomReducer from './roomSlice'; // ✅ import roomSlice
 import serviceReducer from './serviceSlice';
 import fetchAllStaffUsersReducer from './allStaffUsersSlice';
+import bookingReducer from './bookingSlice';
 
 export const store = configureStore({
   reducer: {
@@ -17,6 +18,7 @@ export const store = configureStore({
     rooms: roomReducer,
     services: serviceReducer,
     allstaff: fetchAllStaffUsersReducer,
+    booking: bookingReducer,
   },
 });
 
