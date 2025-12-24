@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
-import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { FaUser, FaEnvelope, FaPhone, FaIdCard, FaCreditCard, FaLock, FaCheckCircle } from 'react-icons/fa';
 import './Payment.css';
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState } from "../redux/store";
+import { simulatePayment } from "../redux/paymentSlice";
+import { useLocation, useNavigate } from "react-router-dom";
 
-interface PaymentPageProps {
-  bookingId: string;
-  amount: number;
-  onSuccess: () => void;
-}
-
-const PaymentPage: React.FC<PaymentPageProps> = ({ bookingId, amount, onSuccess }) => {
-  const stripe = useStripe();
-  const elements = useElements();
+const PaymentPage: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { bookingId, amount } = location.state || {};
 
   const [guestInfo, setGuestInfo] = useState({
     firstName: '',
@@ -21,17 +19,22 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ bookingId, amount, onSuccess 
     idNumber: ''
   });
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [cardComplete, setCardComplete] = useState(false);
+  const [cardInfo, setCardInfo] = useState({
+    number: '',
+    expiry: '',
+    cvv: ''
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [error, setError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const handleGuestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setGuestInfo(prev => ({ ...prev, [e.target.name]: e.target.value }));
     if (error) setError(null);
   };
 
-  const handleCardChange = (event: any) => {
-    setCardComplete(event.complete);
+  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCardInfo(prev => ({ ...prev, [e.target.name]: e.target.value }));
     if (error) setError(null);
   };
 
@@ -41,54 +44,43 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ bookingId, amount, onSuccess 
       guestInfo.lastName.trim() &&
       guestInfo.email.trim() &&
       guestInfo.contact.trim() &&
-      cardComplete
+      cardInfo.number.trim() &&
+      cardInfo.expiry.trim() &&
+      cardInfo.cvv.trim()
     );
   };
 
+  const dispatch = useDispatch<any>();
+  const { currentGuest } = useSelector((state: RootState) => state.guest);
+  const { loading } = useSelector((state: RootState) => state.payment);
+
   const handlePayment = async () => {
-    if (!stripe || !elements) return;
-
-    if (!guestInfo.firstName || !guestInfo.lastName || !guestInfo.email || !guestInfo.contact) {
-      setError('Please fill all required fields');
+    if (!isFormValid()) {
+      setError("Please fill all required fields");
       return;
     }
-
-    if (!cardComplete) {
-      setError('Please complete card details');
-      return;
-    }
-
-    setError(null);
-    setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3000/api/payments/create-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, booking_id: bookingId })
-      });
-      const { clientSecret } = await res.json();
+      const action = await dispatch(
+        simulatePayment({
+          guest_id: Number(currentGuest?.id),
+          booking_id: Number(bookingId),
+          amount,
+          payment_method: "CARD"
+        })
+      );
 
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardElement)!,
-          billing_details: {
-            name: guestInfo.firstName + ' ' + guestInfo.lastName,
-            email: guestInfo.email,
-            phone: guestInfo.contact
-          }
-        }
-      });
+      setShowSuccess(true);
 
-      if (result.error) {
-        setError(result.error.message || 'Payment failed');
-      } else if (result.paymentIntent?.status === 'succeeded') {
-        onSuccess();
+      if (simulatePayment.fulfilled.match(action)) {
+        setTimeout(() => {
+          navigate("/guestdashboard");
+        }, 1500);
+      } else {
+        setError("Payment failed");
       }
     } catch (err: any) {
-      setError(err.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
+      setError(err.message || "Payment failed");
     }
   };
 
@@ -107,7 +99,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ bookingId, amount, onSuccess 
         <div className="payment-container">
           <div className="amount-card">
             <div className="amount-label">Total Amount</div>
-            <div className="amount-value">LKR {amount.toLocaleString()}</div>
+            <div className="amount-value">LKR {amount?.toLocaleString()}</div>
             <div className="amount-info">
               <FaCheckCircle className="check-icon" />
               <span>Booking ID: {bookingId}</span>
@@ -115,147 +107,91 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ bookingId, amount, onSuccess 
           </div>
 
           <form className="payment-form" onSubmit={(e) => e.preventDefault()}>
-            <section className="form-section">
-              <h3 className="section-title">Guest Information</h3>
-              
-              <div className="form-row">
-                <div className="input-group">
-                  <label htmlFor="firstName">First Name *</label>
-                  <div className="input-wrapper">
-                    <FaUser className="input-icon" />
-                    <input
-                      id="firstName"
-                      type="text"
-                      placeholder="Enter first name"
-                      name="firstName"
-                      value={guestInfo.firstName}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
+            {/* Guest Info */}
+            {/* Guest Info */}
+<section className="form-section">
+  <h3 className="section-title">Guest Information</h3>
+  <div className="form-row">
+    <div className="input-group">
+      <label>First Name *</label>
+      <div className="input-wrapper">
+        <FaUser className="input-icon" />
+        <input type="text" name="firstName" value={guestInfo.firstName} onChange={handleGuestChange} placeholder="First Name"/>
+      </div>
+    </div>
+    <div className="input-group">
+      <label>Last Name *</label>
+      <div className="input-wrapper">
+        <FaUser className="input-icon" />
+        <input type="text" name="lastName" value={guestInfo.lastName} onChange={handleGuestChange} placeholder="Last Name"/>
+      </div>
+    </div>
+  </div>
 
-                <div className="input-group">
-                  <label htmlFor="lastName">Last Name *</label>
-                  <div className="input-wrapper">
-                    <FaUser className="input-icon" />
-                    <input
-                      id="lastName"
-                      type="text"
-                      placeholder="Enter last name"
-                      name="lastName"
-                      value={guestInfo.lastName}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
+  <div className="input-group">
+    <label>Email *</label>
+    <div className="input-wrapper">
+      <FaEnvelope className="input-icon" />
+      <input type="email" name="email" value={guestInfo.email} onChange={handleGuestChange} placeholder="Email"/>
+    </div>
+  </div>
 
-              <div className="input-group">
-                <label htmlFor="email">Email Address *</label>
-                <div className="input-wrapper">
-                  <FaEnvelope className="input-icon" />
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="your.email@example.com"
-                    name="email"
-                    value={guestInfo.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
+  <div className="input-group">
+    <label>Contact *</label>
+    <div className="input-wrapper">
+      <FaPhone className="input-icon" />
+      <input type="tel" name="contact" value={guestInfo.contact} onChange={handleGuestChange} placeholder="Contact"/>
+    </div>
+  </div>
 
-              <div className="input-group">
-                <label htmlFor="contact">Contact Number *</label>
-                <div className="input-wrapper">
-                  <FaPhone className="input-icon" />
-                  <input
-                    id="contact"
-                    type="tel"
-                    placeholder="+94 XX XXX XXXX"
-                    name="contact"
-                    value={guestInfo.contact}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
+  <div className="input-group">
+    <label>ID Number</label>
+    <div className="input-wrapper">
+      <FaIdCard className="input-icon" />
+      <input type="text" name="idNumber" value={guestInfo.idNumber} onChange={handleGuestChange} placeholder="Passport / NIC"/>
+    </div>
+  </div>
+</section>
 
-              <div className="input-group">
-                <label htmlFor="idNumber">Passport / NIC Number</label>
-                <div className="input-wrapper">
-                  <FaIdCard className="input-icon" />
-                  <input
-                    id="idNumber"
-                    type="text"
-                    placeholder="Enter ID number (optional)"
-                    name="idNumber"
-                    value={guestInfo.idNumber}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-            </section>
 
-            <section className="form-section">
-              <h3 className="section-title">
-                <FaCreditCard className="section-icon" />
-                Payment Details
-              </h3>
-              
-              <div className="card-input-group">
-                <label>Card Information *</label>
-                <div className="card-element-wrapper">
-                  <CardElement 
-                    options={{ 
-                      hidePostalCode: true,
-                      style: {
-                        base: {
-                          fontSize: '16px',
-                          color: '#1f2937',
-                          '::placeholder': {
-                            color: '#9ca3af',
-                          },
-                        },
-                      },
-                    }} 
-                    onChange={handleCardChange}
-                  />
-                </div>
-              </div>
+            {/* Card Info */}
+            {/* Card Info */}
+<section className="form-section">
+  <h3 className="section-title">
+    <FaCreditCard className="section-icon" /> Payment Details
+  </h3>
 
-              <div className="security-note">
-                <FaLock className="note-icon" />
-                <span>Your payment information is encrypted and secure</span>
-              </div>
-            </section>
+  <div className="input-group">
+    <label>Card Number *</label>
+    <div className="input-wrapper">
+      <FaCreditCard className="input-icon" />
+      <input type="text" name="number" value={cardInfo.number} onChange={handleCardChange} placeholder="4242 4242 4242 4242"/>
+    </div>
+  </div>
 
-            {error && (
-              <div className="error-message">
-                <span className="error-icon">⚠</span>
-                <span>{error}</span>
-              </div>
-            )}
+  <div className="form-row">
+    <div className="input-group">
+      <label>Expiry Date *</label>
+      <div className="input-wrapper">
+        <FaLock className="input-icon" />
+        <input type="text" name="expiry" value={cardInfo.expiry} onChange={handleCardChange} placeholder="MM/YY"/>
+      </div>
+    </div>
+    <div className="input-group">
+      <label>CVV *</label>
+      <div className="input-wrapper">
+        <FaLock className="input-icon" />
+        <input type="text" name="cvv" value={cardInfo.cvv} onChange={handleCardChange} placeholder="123"/>
+      </div>
+    </div>
+  </div>
+</section>
 
-            <button 
-              className={`pay-button ${!isFormValid() || loading ? 'disabled' : ''}`}
-              onClick={handlePayment} 
-              disabled={!isFormValid() || loading}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner"></span>
-                  Processing Payment...
-                </>
-              ) : (
-                <>
-                  <FaLock className="btn-icon" />
-                  Pay LKR {amount.toLocaleString()}
-                </>
-              )}
+
+            {error && <div className="error-message">{error}</div>}
+
+            <button className={`pay-button ${!isFormValid() || loading ? 'disabled' : ''}`} onClick={handlePayment} disabled={!isFormValid() || loading}>
+              {loading ? "Processing Payment..." : `Pay LKR ${amount?.toLocaleString()}`}
             </button>
           </form>
         </div>
@@ -264,6 +200,15 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ bookingId, amount, onSuccess 
           <p>🔒 Powered by Stripe • SSL Encrypted</p>
         </div>
       </div>
+
+      {showSuccess && (
+        <div className="payment-success-overlay">
+          <div className="checkmark-wrapper">
+            <div className="checkmark">✓</div>
+            <p>Payment Successful!</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

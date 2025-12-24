@@ -94,15 +94,7 @@ const routes = createBrowserRouter([
 
   {
     path: '/payment',
-    element: (
-      <Elements stripe={stripePromise}>
-        <PaymentPage
-          bookingId="12345"
-          amount={1000}
-          onSuccess={handlePaymentSuccess} // <-- function assigned
-        />
-      </Elements>
-    ),
+    element: <PaymentPage />
   },
 ])
 

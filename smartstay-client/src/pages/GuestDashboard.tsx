@@ -201,6 +201,24 @@ const handleBookingSubmit = async () => {
     
     if (addBooking.fulfilled.match(resultAction)) {
       alert('Booking created successfully!');
+
+      const booking = resultAction.payload; // ✅ the payload *is* the booking
+      const bookingId = booking.booking_id;   // here is the booking ID
+
+
+
+      // 💰 calculate amount
+      const amount =
+        Number(selectedRoom.price) * Number(bookingForm.nights);
+
+      // 👉 go to payment page with real data
+      navigate('/payment', {
+        state: {
+          bookingId: bookingId,
+          amount,
+          currency: 'LKR'
+        }
+      });
       
       
       closeBookingModal();
