@@ -1,8 +1,12 @@
-// routes/payment.routes.js
-import express from 'express';
-import { createPaymentIntent } from '../controllers/payment.controller.js';
+import express from "express";
+import { simulatePayment } from "../controllers/payment.controller.js";
 
 const router = express.Router();
-router.post('/create-intent', createPaymentIntent);
+
+/**
+ * POST /api/payments/simulate
+ */
+router.post("/simulate", simulatePayment);
 
 export default router;
+

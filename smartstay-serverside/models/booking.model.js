@@ -65,3 +65,17 @@ export const createBooking = async ({
 };
 
 
+export const BookingModel = {
+  updateBookingStatus: async (booking_id, status) => {
+    const query = `
+      UPDATE bookings
+      SET booking_status = $1
+      WHERE booking_id = $2
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [status, booking_id]);
+    return rows[0];
+  }
+};
+
+

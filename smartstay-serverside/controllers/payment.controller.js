@@ -1,26 +1,64 @@
-// controllers/payment.controller.js
-import { stripe } from '../stripe.config.js';
+import { PaymentModel } from "../models/payment.model.js";
+import { BookingModel } from "../models/booking.model.js";
+import { updateRoomStatus } from "../models/room.model.js"; // <-- import this
+import crypto from "crypto";
 
-export const createPaymentIntent = async (req, res) => {
+export const simulatePayment = async (req, res) => {
   try {
-    const { amount, booking_id } = req.body;
+    const {
+      guest_id,
+      booking_id,
+      amount,
+      payment_method
+    } = req.body;
 
-    if (!amount || !booking_id) {
-      return res.status(400).json({ message: 'Amount and booking_id required' });
-    }
+    // 1️⃣ Create payment as PENDING
+    const transaction_ref = `DUMMY-${crypto.randomUUID()}`;
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount * 100, // Stripe uses cents
-      currency: 'lkr',      // or 'usd'
-      metadata: { booking_id }
+    const payment = await PaymentModel.createPayment({
+      guest_id,
+      booking_id,
+      amount,
+      payment_method,
+      payment_status: "PENDING",
+      transaction_ref
     });
 
-    res.json({
-      clientSecret: paymentIntent.client_secret
+    // 2️⃣ Simulate gateway delay
+    setTimeout(async () => {
+      try {
+        // ✅ update payment status
+        await PaymentModel.updatePaymentStatus(payment.payment_id, "SUCCESS");
+
+        // ✅ update booking status
+        const updatedBooking = await BookingModel.updateBookingStatus(
+          booking_id,
+          "SUCCESS"
+        );
+
+        // ✅ update room status
+        if (updatedBooking) {
+          await updateRoomStatus(updatedBooking.room_id, "Booked");
+        }
+
+      } catch (err) {
+        console.error("Error updating statuses after payment 👉", err);
+      }
+    }, 1500);
+
+    // 3️⃣ Return initial payment info immediately
+    return res.status(201).json({
+      success: true,
+      message: "Payment initiated (simulation)",
+      payment
     });
 
-  } catch (err) {
-    console.error('STRIPE ERROR:', err);
-    res.status(500).json({ message: 'Payment intent creation failed' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Payment simulation failed"
+    });
   }
 };
+

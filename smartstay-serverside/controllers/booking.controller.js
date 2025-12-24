@@ -50,10 +50,8 @@ export const addBooking = async (req, res) => {
       guest_id
     });
 
-    res.status(201).json({
-      message: 'Booking created successfully',
-      booking
-    });
+    res.status(201).json(booking)
+    console.log('NEW BOOKING 👉', booking)
 
   } catch (error) {
     console.error('ADD BOOKING ERROR 👉', error);

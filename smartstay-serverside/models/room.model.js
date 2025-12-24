@@ -88,4 +88,16 @@ export const getAllRooms = async () => {
   return rows;
 };
 
+export const updateRoomStatus = async (roomId, status) => {
+  const query = `
+    UPDATE rooms
+    SET status = $1
+    WHERE id = $2
+    RETURNING *
+  `;
+  const { rows } = await pool.query(query, [status, roomId]);
+  return rows[0];
+};
+
+
 
