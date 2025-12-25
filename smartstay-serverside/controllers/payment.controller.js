@@ -2,6 +2,7 @@ import { PaymentModel } from "../models/payment.model.js";
 import { BookingModel } from "../models/booking.model.js";
 import { updateRoomStatus } from "../models/room.model.js"; // <-- import this
 import { sendBookingSuccessEmail } from "../utils/nodemailer.js";
+import { getRoomById } from "../models/room.model.js";
 import crypto from "crypto";
 
 export const simulatePayment = async (req, res) => {
@@ -41,12 +42,14 @@ export const simulatePayment = async (req, res) => {
         if (updatedBooking) {
           await updateRoomStatus(updatedBooking.room_id, "Booked");
 
+          const room = await getRoomById(updatedBooking.room_id);
+
           await sendBookingSuccessEmail({
             to: updatedBooking.email,
             firstName: updatedBooking.first_name,
             bookingId: updatedBooking.booking_id,
             amount,
-            roomName: updatedBooking.room_name // make sure room_name is returned in booking
+            roomName: room ? room.room_name : "Room" // make sure room_name is returned in booking
           });
         }
 

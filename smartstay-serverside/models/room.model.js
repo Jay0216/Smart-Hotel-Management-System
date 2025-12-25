@@ -99,5 +99,10 @@ export const updateRoomStatus = async (roomId, status) => {
   return rows[0];
 };
 
+export const getRoomById = async (roomId) => {
+  const result = await pool.query("SELECT * FROM rooms WHERE id = $1", [roomId]);
+  return result.rows[0]; // pg returns rows in result.rows
+};
+
 
 
