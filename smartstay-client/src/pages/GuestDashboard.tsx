@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import './GuestDashboard.css';
 import { fetchRoomsAsync } from '../redux/roomSlice';
-import { addBooking } from '../redux/bookingSlice'; // replace with actual path
+import { addBooking, fetchGuestBookings } from '../redux/bookingSlice'; // replace with actual path
 
 
 interface Booking {
@@ -230,6 +230,16 @@ const handleBookingSubmit = async () => {
     alert('Something went wrong while creating the booking.');
   }
 };
+
+const { guestBookings, status: bookingStatus } = useSelector(
+  (state: RootState) => state.booking
+);
+
+useEffect(() => {
+  if (currentGuest?.id) {
+    dispatch(fetchGuestBookings(currentGuest.id));
+  }
+}, [dispatch, currentGuest]);
 
 
 
@@ -477,17 +487,23 @@ const handleBookingSubmit = async () => {
           {activeTab==='bookings' && (
             <div className="bookings-section">
               <h2>Manage Your Bookings</h2>
-              {bookings.map(b => (
-                <div key={b.id} className="booking-card">
-                  <strong>{b.room}</strong>
-                  <p>Status: {b.status}</p>
-                  <p>{b.checkIn} - {b.checkOut}</p>
-                  <div className="booking-actions">
-                    <button>Edit</button>
-                    <button>Cancel</button>
-                  </div>
-                </div>
-              ))}
+{bookingStatus === 'loading' && <p>Loading bookings...</p>}
+{bookingStatus === 'failed' && <p>Failed to load bookings.</p>}
+{bookingStatus === 'succeeded' && guestBookings.length === 0 && (
+  <p>No bookings found.</p>
+)}
+{bookingStatus === 'succeeded' && guestBookings.map((b) => (
+  <div key={b.booking_id} className="booking-card">
+    <strong className='book-id'>{b.room_id}</strong> {/* replace with room name if available */}
+    <p>Status: {b.booking_status}</p>
+    <p>Guests: {b.guests} | Nights: {b.nights}</p>
+    <p>Check-In: {new Date(b.created_at).toLocaleDateString()}</p>
+    <div className="booking-actions">
+      <button>Online Check-in</button>
+      <button>Cancel</button>
+    </div>
+  </div>
+))}
             </div>
           )}
 

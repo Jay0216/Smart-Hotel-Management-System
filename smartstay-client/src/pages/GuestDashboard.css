@@ -203,6 +203,13 @@
   transform: translateY(-3px);
   box-shadow: 0 8px 18px rgba(0,0,0,0.35);
 }
+
+.booking-card p {
+  margin-top: 10px;
+}
+
+
+
 .booking-actions button {
   margin-right: 0.5rem;
   padding: 0.25rem 0.5rem;
@@ -211,6 +218,7 @@
   background: #2563eb;
   color: #fff;
   cursor: pointer;
+  margin-top: 20px;
 }
 .booking-actions button:hover { background: #1e40af; }
 

@@ -62,3 +62,15 @@ export const getAllBookings = async (): Promise<BookingResponse[]> => {
   const data: BookingResponse[] = await res.json();
   return data;
 };
+
+
+// Fetch all bookings for a specific guest
+export const getBookingsByGuestId = async (guestId: string): Promise<BookingResponse[]> => {
+  const res = await fetch(`${BASE_URL}/guest/${guestId}`);
+  if (!res.ok) {
+    const error: APIError = await res.json();
+    throw new Error(error.message || 'Failed to fetch guest bookings');
+  }
+  const data: BookingResponse[] = await res.json();
+  return data;
+};
