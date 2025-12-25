@@ -1,4 +1,4 @@
-import { createBooking } from '../models/booking.model.js';
+import { createBooking, BookingModel } from '../models/booking.model.js';
 
 export const addBooking = async (req, res) => {
   try {
@@ -56,5 +56,24 @@ export const addBooking = async (req, res) => {
   } catch (error) {
     console.error('ADD BOOKING ERROR 👉', error);
     res.status(500).json({ message: error.message || 'Failed to create booking' });
+  }
+};
+
+
+// Get all bookings for a specific guest
+export const getGuestBookings = async (req, res) => {
+  try {
+    const { guestId } = req.params;
+
+    if (!guestId) {
+      return res.status(400).json({ message: 'guestId is required' });
+    }
+
+    const bookings = await BookingModel.getBookingsByGuestId(guestId);
+
+    res.status(200).json(bookings);
+  } catch (error) {
+    console.error('GET GUEST BOOKINGS ERROR 👉', error);
+    res.status(500).json({ message: error.message || 'Failed to fetch guest bookings' });
   }
 };

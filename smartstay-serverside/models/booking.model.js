@@ -75,7 +75,22 @@ export const BookingModel = {
     `;
     const { rows } = await pool.query(query, [status, booking_id]);
     return rows[0];
+  },
+
+  getBookingsByGuestId: async (guest_id) => {
+    const query = `
+      SELECT b.*, r.room_name, br.name AS branch_name
+      FROM bookings b
+      JOIN rooms r ON b.room_id = r.id
+      JOIN branches br ON b.branch_id = br.id
+      WHERE b.guest_id = $1
+      ORDER BY b.created_at DESC;
+    `;
+    const { rows } = await pool.query(query, [guest_id]);
+    return rows; // returns array of bookings
   }
+
+  
 };
 
 
