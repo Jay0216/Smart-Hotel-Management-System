@@ -1,6 +1,7 @@
 import { PaymentModel } from "../models/payment.model.js";
 import { BookingModel } from "../models/booking.model.js";
 import { updateRoomStatus } from "../models/room.model.js"; // <-- import this
+import { sendBookingSuccessEmail } from "../utils/nodemailer.js";
 import crypto from "crypto";
 
 export const simulatePayment = async (req, res) => {
@@ -39,7 +40,17 @@ export const simulatePayment = async (req, res) => {
         // ✅ update room status
         if (updatedBooking) {
           await updateRoomStatus(updatedBooking.room_id, "Booked");
+
+          await sendBookingSuccessEmail({
+            to: updatedBooking.email,
+            firstName: updatedBooking.first_name,
+            bookingId: updatedBooking.booking_id,
+            amount,
+            roomName: updatedBooking.room_name // make sure room_name is returned in booking
+          });
         }
+
+        
 
       } catch (err) {
         console.error("Error updating statuses after payment 👉", err);
