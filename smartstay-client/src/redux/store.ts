@@ -9,6 +9,7 @@ import serviceReducer from './serviceSlice';
 import fetchAllStaffUsersReducer from './allStaffUsersSlice';
 import bookingReducer from './bookingSlice';
 import paymentReducer from "./paymentSlice";
+import serviceRequestReducer from './serviceRequestSlice'; // ✅ import serviceRequestSlice
 
 export const store = configureStore({
   reducer: {
@@ -21,6 +22,7 @@ export const store = configureStore({
     allstaff: fetchAllStaffUsersReducer,
     booking: bookingReducer,
     payment: paymentReducer,
+    serviceRequests: serviceRequestReducer
   },
 });
 

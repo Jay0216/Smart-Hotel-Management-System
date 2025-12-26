@@ -6,6 +6,10 @@ import { useNavigate } from 'react-router-dom';
 import './GuestDashboard.css';
 import { fetchRoomsAsync } from '../redux/roomSlice';
 import { addBooking, fetchGuestBookings } from '../redux/bookingSlice'; // replace with actual path
+import { createServiceRequest, fetchGuestServiceRequests } from '../redux/serviceRequestSlice';
+import { fetchServicesAsync } from '../redux/serviceSlice';
+
+
 
 
 interface Booking {
@@ -73,12 +77,7 @@ const GuestDashboard: React.FC = () => {
    // { id: '4', name: 'Pool View Room', image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400', price: '$220/night', location: 'Kandy' }
   //];
 
-  const services = [
-    { id: '1', name: 'Spa Service', icon: '💆', description: 'Relaxing massage' },
-    { id: '2', name: 'Fine Dining', icon: '🍽️', description: 'Gourmet meals' },
-    { id: '3', name: 'Airport Shuttle', icon: '🚐', description: '24/7 transport' },
-    { id: '4', name: 'Concierge', icon: '🛎️', description: 'Personal assistance' }
-  ];
+  
 
   const billingSummary = {
     roomCharges: 450.00,
@@ -108,11 +107,43 @@ const GuestDashboard: React.FC = () => {
 
   const { rooms, loading } = useSelector((state: RootState) => state.rooms);
 
+  const { services: allServices, loading: servicesLoading } = useSelector(
+   (state: RootState) => state.services
+  );
+
+  useEffect(() => {
+   dispatch(fetchServicesAsync());
+  }, [dispatch]);
+
+
 
 
   useEffect(() => {
    dispatch(fetchRoomsAsync());
   }, [dispatch]);
+
+  
+
+useEffect(() => {
+  if (currentGuest?.id) {
+    dispatch(fetchGuestServiceRequests(currentGuest.id));
+  }
+}, [dispatch, currentGuest]);
+
+
+const { requests: guestServiceRequests, loading: serviceRequestsLoading, error: serviceRequestsError } =
+  useSelector((state: RootState) => state.serviceRequests);
+
+  
+
+
+
+
+  const servicesToDisplay = allServices.map(s => ({
+   id: s.id.toString(),
+   name: s.name,
+   branch_name: s.branch_name,
+  }));
 
   const featuredRoom = rooms.length > 0 ? rooms[0] : null;
   const otherRooms = rooms.slice(1);
@@ -240,6 +271,72 @@ useEffect(() => {
     dispatch(fetchGuestBookings(currentGuest.id));
   }
 }, [dispatch, currentGuest]);
+
+const [showServiceModal, setShowServiceModal] = useState(false);
+
+const [serviceForm, setServiceForm] = useState({
+  branch_name: '',
+  service_id: '',
+  request_service_name: '',
+  request_note: ''
+});
+
+
+const openServiceModal = (serviceId?: string) => {
+  const selectedService = servicesToDisplay.find(s => s.id === serviceId);
+
+  setServiceForm({
+    branch_name: featuredRoom?.branch_name || '',
+    service_id: serviceId || '',
+    request_service_name: selectedService?.name || '',
+    request_note: ''
+  });
+
+  setShowServiceModal(true);
+};
+
+
+const closeServiceModal = () => {
+  setShowServiceModal(false);
+};
+
+const handleServiceChange = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+) => {
+  setServiceForm(prev => ({
+    ...prev,
+    [e.target.name]: e.target.value
+  }));
+};
+
+const handleServiceSubmit = async () => {
+  if (!serviceForm.branch_name || !serviceForm.service_id) {
+    alert('Please select a service');
+    return;
+  }
+
+  const payload = {
+    guest_id: currentGuest?.id || '',
+    branch_name: serviceForm.branch_name,
+    service_id: Number(serviceForm.service_id),
+    request_service_name: serviceForm.request_service_name,
+    request_note: serviceForm.request_note || null
+  };
+
+  try {
+    const result = await dispatch(createServiceRequest(payload));
+
+    if (createServiceRequest.fulfilled.match(result)) {
+      alert('Service request sent successfully!');
+      closeServiceModal();
+    } else {
+      alert(result.payload || 'Failed to send request');
+    }
+  } catch (err) {
+    console.error('Service request error 👉', err);
+    alert('Something went wrong');
+  }
+};
 
 
 
@@ -471,15 +568,19 @@ useEffect(() => {
 
     {/* Services */}
     <div className="services-grid">
-      {services.map(s => (
-        <div key={s.id} className="service-card">
-          <div className="service-icon">{s.icon}</div>
-          <h4 className="service-name">{s.name}</h4>
-          <p className="service-desc">{s.description}</p>
-          <button className="request-btn">Request</button>
-        </div>
-      ))}
-    </div>
+  {servicesLoading ? (
+    <p>Loading services...</p>
+  ) : (
+    servicesToDisplay.map(s => (
+      <div key={s.id} className="service-card">
+        
+        <h4 className="service-name">{s.name}</h4>
+        <p className="service-desc">{s.branch_name}</p>
+        <button className="request-btn" onClick={() => openServiceModal(s.id)}>Request</button>
+      </div>
+    ))
+  )}
+</div>
 
   </div>
           )}
@@ -508,17 +609,28 @@ useEffect(() => {
           )}
 
           {activeTab==='services' && (
-            <div className="services-section">
-              <h2>Request Services</h2>
-              <div className="service-buttons">
-                <button>Room Service</button>
-                <button>Dining</button>
-                <button>Housekeeping</button>
-                <button>Transport</button>
-                <button>Maintenance</button>
-              </div>
-            </div>
-          )}
+  <div className="services-section">
+    <h2>Requested Services</h2>
+
+    {serviceRequestsLoading && <p>Loading service requests...</p>}
+{serviceRequestsError && <p>Failed to load service requests.</p>}
+{!serviceRequestsLoading && !serviceRequestsError && guestServiceRequests.length === 0 && (
+  <p>No service requests found.</p>
+)}
+{!serviceRequestsLoading && !serviceRequestsError && guestServiceRequests.length > 0 &&
+  guestServiceRequests.map((req) => (
+    <div key={req.request_id} className="booking-card">
+      <strong className='service-id'>{req.service_name}</strong>
+      <p>Branch: {req.branch_name || 'N/A'}</p>
+      <p>Note: {req.request_note || 'N/A'}</p>
+      <p>Status: {req.status}</p>
+    </div>
+))}
+  </div>
+)}
+
+
+
 
           {activeTab==='profile' && (
             <div className="profile-section">
@@ -710,6 +822,58 @@ useEffect(() => {
     </div>
   </div>
 )}
+
+
+{showServiceModal && (
+  <div className="booking-modal">
+    <div className="booking-modal-content">
+      <h2>Request a Service</h2>
+
+      <div className="booking-form">
+        {/* Branch Name */}
+        <input
+          type="text"
+          name="branch_name"
+          placeholder="Branch Name"
+          value={serviceForm.branch_name}
+          onChange={handleServiceChange}
+        />
+
+        {/* Service Select */}
+        <select
+          name="service_id"
+          value={serviceForm.service_id}
+          onChange={handleServiceChange}
+        >
+          <option value="">Select Service</option>
+          {servicesToDisplay.map(service => (
+            <option key={service.id} value={service.id}>
+              {service.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Request Note */}
+        <textarea
+          name="request_note"
+          placeholder="Request note (optional)"
+          value={serviceForm.request_note}
+          onChange={handleServiceChange}
+        />
+      </div>
+
+      <div className="booking-modal-actions">
+        <button onClick={handleServiceSubmit}>
+          Send Request
+        </button>
+        <button onClick={closeServiceModal}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
 
 
