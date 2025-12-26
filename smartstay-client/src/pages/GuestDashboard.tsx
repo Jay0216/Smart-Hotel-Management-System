@@ -327,7 +327,11 @@ const handleServiceSubmit = async () => {
     const result = await dispatch(createServiceRequest(payload));
 
     if (createServiceRequest.fulfilled.match(result)) {
+      
       alert('Service request sent successfully!');
+      if (currentGuest?.id) {
+       dispatch(fetchGuestServiceRequests(currentGuest.id));
+      }
       closeServiceModal();
     } else {
       alert(result.payload || 'Failed to send request');
@@ -619,11 +623,10 @@ const handleServiceSubmit = async () => {
 )}
 {!serviceRequestsLoading && !serviceRequestsError && guestServiceRequests.length > 0 &&
   guestServiceRequests.map((req) => (
-    <div key={req.request_id} className="booking-card">
-      <strong className='service-id'>{req.service_name}</strong>
-      <p>Branch: {req.branch_name || 'N/A'}</p>
-      <p>Note: {req.request_note || 'N/A'}</p>
-      <p>Status: {req.status}</p>
+    <div key={req?.request_id} className="booking-card">
+      <strong className='service-id'>Service name : {req?.service_name || 'Unknown'}</strong>
+      <p>Note: {req?.request_note || 'N/A'}</p>
+      <p>Status: {req?.status || 'Pending'}</p>
     </div>
 ))}
   </div>

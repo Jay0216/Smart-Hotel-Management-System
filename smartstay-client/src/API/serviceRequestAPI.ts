@@ -22,7 +22,6 @@ export interface ServiceRequest {
   request_id: number;
   guest_id: string;
   branch_id: number;
-  branch_name: string;
   service_id: number;
   service_name: string;
   request_note: string | null;
@@ -37,7 +36,7 @@ interface BackendServiceRequest {
   request_status: string;
   request_note: string | null;
   requested_at: string;
-  name: string;
+  service_name: string;
   guest_id?: string;
   branch_id?: number;
   service_id?: number;
@@ -56,9 +55,8 @@ const transformServiceRequest = (backend: BackendServiceRequest): ServiceRequest
     request_id: backend.id,
     guest_id: backend.guest_id || '',
     branch_id: backend.branch_id || 0,
-    branch_name: backend.name,
     service_id: backend.service_id || 0,
-    service_name: backend.name, // Assuming branch name is used as service name
+    service_name: backend.service_name,
     request_note: backend.request_note,
     status: backend.request_status.toLowerCase() as ServiceRequestStatus,
     created_at: backend.requested_at,
