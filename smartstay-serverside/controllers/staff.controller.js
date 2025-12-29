@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { generateToken } from '../utils/jwt.js';
-import { createStaff, findStaffByEmail, findBranchByName, getAllStaff } from '../models/staff.model.js';
+import { createStaff, findStaffByEmail, findBranchByName, getAllStaff, getAvailableStaffByBranch } from '../models/staff.model.js';
 
 export const registerStaff = async (req, res) => {
   try {
@@ -89,4 +89,28 @@ export const fetchAllStaff = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch staff', error: err.message });
   }
 };
+
+
+// controllers/staff.controller.js
+
+export const fetchAssignableStaff = async (req, res) => {
+  try {
+    const { branchId } = req.params;
+
+    if (!branchId) {
+      return res.status(400).json({ message: 'branchId is required' });
+    }
+
+    const staff = await getAvailableStaffByBranch(branchId);
+
+    res.status(200).json({ staff });
+  } catch (err) {
+    console.error('FETCH ASSIGNABLE STAFF ERROR 👉', err.message);
+    res.status(500).json({
+      message: 'Failed to fetch assignable staff',
+      error: err.message
+    });
+  }
+};
+
 

@@ -91,3 +91,14 @@ export const updateServiceRequestStatus = async (req, res) => {
     res.status(500).json({ message: "Failed to update request status" });
   }
 };
+
+
+export const getAllServiceRequests = async (req, res) => {
+  try {
+    const requests = await ServiceRequestModel.getAllRequests();
+    res.status(200).json(requests);
+  } catch (error) {
+    console.error("GET ALL SERVICE REQUESTS ERROR 👉", error);
+    res.status(500).json({ message: "Failed to fetch all service requests" });
+  }
+};

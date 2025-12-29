@@ -43,3 +43,27 @@ export const getAllStaff = async () => {
   );
   return result.rows;
 };
+
+
+// Get available staff by branch only
+export const getAvailableStaffByBranch = async (branchId) => {
+  const result = await pool.query(
+    `
+    SELECT 
+      s.staff_id,
+      s.first_name,
+      s.last_name,
+      s.email,
+      s.branch_id,
+      b.name AS branch_name
+    FROM staff s
+    JOIN branches b ON s.branch_id = b.id
+    WHERE s.branch_id = $1
+      AND s.is_available = TRUE
+    ORDER BY s.first_name ASC
+    `,
+    [branchId]
+  );
+
+  return result.rows;
+};

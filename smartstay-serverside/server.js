@@ -12,6 +12,7 @@ import staffUsersRoutes from './routes/staffusers.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import serviceRequestRoutes from "./routes/serviceRequest.routes.js";
+import assignedTaskRoutes from './routes/staff.task.routes.js';
 
 
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/api', staffUsersRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use("/api/service-requests", serviceRequestRoutes);
+app.use('/api/assigned-tasks', assignedTaskRoutes);
 
 app.get('/', (req, res) => {
   res.send('SmartStay Hotel Server side');

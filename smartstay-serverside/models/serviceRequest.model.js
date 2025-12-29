@@ -60,7 +60,7 @@ export const ServiceRequestModel = {
         g.last_name
       FROM service_requests sr
       JOIN services s ON sr.service_id = s.id
-      JOIN guests g ON sr.guest_id = g.id
+      JOIN guests g ON sr.guest_id = g.guest_id
       WHERE sr.branch_id = $1
       ORDER BY sr.requested_at DESC;
     `;
@@ -80,5 +80,31 @@ export const ServiceRequestModel = {
 
     const { rows } = await pool.query(query, [status, id]);
     return rows[0];
-  }
+  },
+
+  getAllRequests: async () => {
+  const query = `
+    SELECT
+      sr.id,
+      sr.guest_id,
+      sr.branch_id,
+      sr.service_id,
+      sr.request_status,
+      sr.request_note,
+      sr.requested_at,
+      sr.updated_at,
+      s.name AS service_name,
+      b.name AS branch_name,
+      g.first_name,
+      g.last_name
+    FROM service_requests sr
+    JOIN services s ON sr.service_id = s.id
+    JOIN branches b ON sr.branch_id = b.id
+    JOIN guests g ON sr.guest_id = g.guest_id
+    ORDER BY sr.requested_at DESC;
+  `;
+
+  const { rows } = await pool.query(query);
+  return rows;
+},
 };

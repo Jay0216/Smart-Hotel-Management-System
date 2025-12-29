@@ -4,7 +4,8 @@ import {
   createServiceRequest,
   getGuestServiceRequests,
   getBranchServiceRequests,
-  updateServiceRequestStatus
+  updateServiceRequestStatus,
+  getAllServiceRequests
 } from "../controllers/serviceRequest.controller.js";
 
 const router = express.Router();
@@ -20,5 +21,7 @@ router.get("/branch/:branchId", getBranchServiceRequests);
 
 // Admin updates request status
 router.put("/:requestId/status", updateServiceRequestStatus);
+
+router.get("/all", getAllServiceRequests);
 
 export default router;
