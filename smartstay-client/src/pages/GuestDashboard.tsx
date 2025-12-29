@@ -8,6 +8,9 @@ import { fetchRoomsAsync } from '../redux/roomSlice';
 import { addBooking, fetchGuestBookings } from '../redux/bookingSlice'; // replace with actual path
 import { createServiceRequest, fetchGuestServiceRequests } from '../redux/serviceRequestSlice';
 import { fetchServicesAsync } from '../redux/serviceSlice';
+import { checkActionThunk } from '../redux/checkincheckoutSlice';
+import { fetchBillingSummaryThunk } from '../redux/billingSlice';
+
 
 
 
@@ -79,12 +82,7 @@ const GuestDashboard: React.FC = () => {
 
   
 
-  const billingSummary = {
-    roomCharges: 450.00,
-    serviceCharges: 120.00,
-    tax: 57.00,
-    total: 627.00
-  };
+  
 
   //const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -143,6 +141,7 @@ const { requests: guestServiceRequests, loading: serviceRequestsLoading, error: 
    id: s.id.toString(),
    name: s.name,
    branch_name: s.branch_name,
+   prices: s.price
   }));
 
   const featuredRoom = rooms.length > 0 ? rooms[0] : null;
@@ -343,6 +342,101 @@ const handleServiceSubmit = async () => {
 };
 
 
+const handleGuestCheckIn = async (bookingId: number) => {
+  try {
+    const result = await dispatch(
+      checkActionThunk({
+        bookingId,
+        actionBy: 'guest',
+        actionType: 'checkin'
+      })
+    ).unwrap();
+
+    alert('Check-in successful ✅');
+
+    // Refresh bookings to get updated status
+    if (currentGuest?.id) {
+      dispatch(fetchGuestBookings(currentGuest.id));
+    }
+
+  } catch (error: any) {
+    alert(error || 'Check-in failed');
+  }
+};
+
+
+  
+
+
+// After successful booking
+
+useEffect(() => {
+  if (currentGuest?.id) {
+    dispatch(fetchBillingSummaryThunk(currentGuest.id)); // pass guestId
+  }
+}, [currentGuest, dispatch]);
+
+
+const { data: billingSummary, loading: billingLoading, error: billingError } = useSelector(
+  (state: RootState) => state.billing
+);
+
+
+
+const handleGuestCheckout = async (booking: any) => {
+  try {
+    // Check if guest has any completed services
+    const completedServices = guestServiceRequests.filter(
+      (r) => r.status.toLowerCase() === 'completed'
+    );
+
+    if (completedServices.length > 0) {
+      // Calculate total amount (room + services + tax if any)
+      const roomAmount = Number(booking.paid_amount || 0);
+
+      const servicesAmount = completedServices
+        .map(s => Number(s.service_price || 0))
+        .reduce((a, b) => a + b, 0);
+
+      const taxRate = billingSummary?.taxRate || 0;
+
+      const totalAmount = roomAmount + servicesAmount;
+      const totalWithTax = totalAmount + (totalAmount * (taxRate / 100));
+
+      // Redirect to Payment page with total including services
+      navigate('/payment', {
+        state: {
+          bookingId: booking.booking_id,
+          amount: totalWithTax
+        }
+      });
+    } else {
+      // Normal checkout – no completed services
+      const result = await dispatch(
+        checkActionThunk({
+          bookingId: booking.booking_id,
+          actionBy: 'guest',
+          actionType: 'checkout'
+        })
+      ).unwrap();
+
+      alert('Checkout successful ✅');
+
+      // Refresh bookings and billing summary
+      if (currentGuest?.id) {
+        dispatch(fetchGuestBookings(currentGuest.id));
+        dispatch(fetchBillingSummaryThunk(currentGuest.id));
+      }
+    }
+  } catch (error: any) {
+    console.error('Checkout error:', error);
+    alert(error?.message || 'Checkout failed');
+  }
+};
+
+
+
+
 
   
 
@@ -517,30 +611,87 @@ const handleServiceSubmit = async () => {
 
       {/* Billing */}
       <div className="billing-card">
-        <h3 className="billing-title">Billing Summary</h3>
+  <h3 className="billing-title">Billing Summary</h3>
 
-        <div className="billing-item">
-          <span>Room Charges</span>
-          <span>${billingSummary.roomCharges}</span>
-        </div>
-        <div className="billing-item">
-          <span>Service Charges</span>
-          <span>${billingSummary.serviceCharges}</span>
-        </div>
-        <div className="billing-item">
-          <span>Tax</span>
-          <span>${billingSummary.tax}</span>
-        </div>
+  {billingLoading && <p>Loading billing summary...</p>}
+  {billingError && <p style={{ color: 'red' }}>Failed to load billing summary</p>}
 
-        <div className="billing-divider"></div>
+  {!billingLoading && !billingError && billingSummary && (
+  <>
+    {/* Determine if all bookings are checked out */}
+    {guestBookings.some(b => b.booking_status !== 'checked_out') ? 
+      (() => {
+        // Normal billing values
+        const roomCharges = Number(billingSummary.roomCharges);
+        const serviceCharges = guestServiceRequests
+          .map(r => Number(r.service_price) || 0)
+          .reduce((a, b) => a + b, 0);
+        const taxRate = Number(billingSummary.taxRate);
+        const total =
+          roomCharges + serviceCharges + (roomCharges + serviceCharges) * (taxRate / 100);
 
-        <div className="billing-total">
-          <span>Total</span>
-          <span>${billingSummary.total}</span>
-        </div>
+        return (
+          <>
+            <div className="billing-item">
+              <span>Room Charges</span>
+              <span>LKR {roomCharges.toLocaleString()}</span>
+            </div>
+            <div className="billing-item">
+              <span>Service Requests</span>
+              <span>LKR {serviceCharges.toLocaleString()}</span>
+            </div>
+            <div className="billing-item">
+              <span>Tax</span>
+              <span>{taxRate.toLocaleString()} %</span>
+            </div>
 
-        <button className="pay-btn">Pay Now</button>
-      </div>
+            <div className="billing-divider"></div>
+
+            <div className="billing-total">
+              <span>Total</span>
+              <span>LKR {total.toLocaleString()}</span>
+            </div>
+
+            <button className="pay-btn">Pay Now</button>
+          </>
+        );
+      })()
+      :
+      (() => {
+        // All checked out → same structure but zero values
+        return (
+          <>
+            <div className="billing-item">
+              <span>Room Charges</span>
+              <span>LKR 0</span>
+            </div>
+            <div className="billing-item">
+              <span>Service Requests</span>
+              <span>LKR 0</span>
+            </div>
+            <div className="billing-item">
+              <span>Tax</span>
+              <span>0 %</span>
+            </div>
+
+            <div className="billing-divider"></div>
+
+            <div className="billing-total">
+              <span>Total</span>
+              <span>LKR 0</span>
+            </div>
+
+            <button className="pay-btn" disabled>
+              ✅ All payments completed
+            </button>
+          </>
+        );
+      })()
+    }
+  </>
+)}
+
+</div>
 
     </div>
 
@@ -580,6 +731,7 @@ const handleServiceSubmit = async () => {
         
         <h4 className="service-name">{s.name}</h4>
         <p className="service-desc">{s.branch_name}</p>
+        <p className="service-desc">{s.prices}</p>
         <button className="request-btn" onClick={() => openServiceModal(s.id)}>Request</button>
       </div>
     ))
@@ -602,11 +754,35 @@ const handleServiceSubmit = async () => {
     <strong className='book-id'>{b.room_id}</strong> {/* replace with room name if available */}
     <p>Status: {b.booking_status}</p>
     <p>Guests: {b.guests} | Nights: {b.nights}</p>
+    <p>Amount: {b.paid_amount}</p>
     <p>Check-In: {new Date(b.created_at).toLocaleDateString()}</p>
     <div className="booking-actions">
-      <button>Online Check-in</button>
-      <button>Cancel</button>
-    </div>
+  {b.booking_status === 'SUCCESS' && (
+    <button
+      className="checkin-btn"
+      onClick={() => handleGuestCheckIn(b.booking_id)}
+    >
+      Online Check-in
+    </button>
+  )}
+
+  {b.booking_status === 'checked_in' && (
+  <button
+    className="checkout-btn"
+    onClick={() => handleGuestCheckout(b)}
+  >
+    Checkout
+  </button>
+)}
+
+{b.booking_status === 'checked_out' && (
+  <button className="checkedout-btn" disabled>
+    Checked Out ✔
+  </button>
+)}
+
+  <button className="cancel-btn">Cancel</button>
+</div>
   </div>
 ))}
             </div>
@@ -627,6 +803,7 @@ const handleServiceSubmit = async () => {
       <strong className='service-id'>Service name : {req?.service_name || 'Unknown'}</strong>
       <p>Note: {req?.request_note || 'N/A'}</p>
       <p>Status: {req?.status || 'Pending'}</p>
+      <p>Price: {req?.service_price || 'N/A'}</p>
     </div>
 ))}
   </div>

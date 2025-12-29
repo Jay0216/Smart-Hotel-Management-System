@@ -11,6 +11,7 @@ export interface BookingPayload {
   guests: number;
   nights: number;
   additional_note?: string | null;
+  
 }
 
 
@@ -19,6 +20,8 @@ export interface BookingResponse extends BookingPayload {
   booking_id: number;
   booking_status: string;
   created_at: string;
+  paid_amount: number;
+  
 }
 
 export interface APIError {

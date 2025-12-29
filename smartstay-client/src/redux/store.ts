@@ -11,6 +11,8 @@ import bookingReducer from './bookingSlice';
 import paymentReducer from "./paymentSlice";
 import serviceRequestReducer from './serviceRequestSlice'; // ✅ import serviceRequestSlice
 import staffTasksReducer from './staffTasksSlice'; // ✅ import staffTasksSlice
+import checkinCheckoutReducer from './checkincheckoutSlice'; // ✅ import checkincheckoutSlice
+import billingReducer from './billingSlice'; // ✅ import billingSlice
 
 export const store = configureStore({
   reducer: {
@@ -24,7 +26,9 @@ export const store = configureStore({
     booking: bookingReducer,
     payment: paymentReducer,
     serviceRequests: serviceRequestReducer,
-    staffTasks: staffTasksReducer
+    staffTasks: staffTasksReducer,
+    checkinCheckout: checkinCheckoutReducer,
+    billing: billingReducer,
   },
 });
 

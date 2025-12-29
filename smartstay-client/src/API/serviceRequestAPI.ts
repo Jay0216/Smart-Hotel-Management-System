@@ -43,6 +43,7 @@ interface BackendServiceRequest {
   branch_id?: number;
   service_id?: number;
   branch_name?: string;
+  service_price?: number;
 }
 
 // Generic API response wrapper
@@ -66,6 +67,7 @@ export interface ServiceRequest {
   guest_first_name?: string;
   guest_last_name?: string;
   branch_name?: string;
+  service_price?: number;
 }
 
 // Transform backend response to frontend format
@@ -85,7 +87,8 @@ const transformServiceRequest = (
     // ✅ ADMIN DATA
     guest_first_name: backend.first_name,
     guest_last_name: backend.last_name,
-    branch_name: backend.branch_name
+    branch_name: backend.branch_name,
+    service_price: backend.service_price
   };
 };
 
