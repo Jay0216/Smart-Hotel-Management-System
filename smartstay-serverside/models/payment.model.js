@@ -57,5 +57,19 @@ export const PaymentModel = {
     `;
     const { rows } = await pool.query(query, [booking_id]);
     return rows;
+  },
+
+  // ✅ NEW: update amount and payment_method for existing payment
+  updatePaymentAmount: async (payment_id, amount, payment_method) => {
+    const query = `
+      UPDATE payments
+      SET amount = $1,
+          payment_method = $2,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE payment_id = $3
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [amount, payment_method, payment_id]);
+    return rows[0];
   }
 };

@@ -78,17 +78,33 @@ export const BookingModel = {
   },
 
   getBookingsByGuestId: async (guest_id) => {
-    const query = `
-      SELECT b.*, r.room_name, br.name AS branch_name
-      FROM bookings b
-      JOIN rooms r ON b.room_id = r.id
-      JOIN branches br ON b.branch_id = br.id
-      WHERE b.guest_id = $1
-      ORDER BY b.created_at DESC;
-    `;
-    const { rows } = await pool.query(query, [guest_id]);
-    return rows; // returns array of bookings
-  }
+  const query = `
+    SELECT
+      b.*,
+      r.room_name,
+      br.name AS branch_name,
+
+      -- payment details
+      COALESCE(p.amount, 0) AS paid_amount,
+      p.currency,
+      p.payment_status
+
+    FROM bookings b
+    JOIN rooms r ON b.room_id = r.id
+    JOIN branches br ON b.branch_id = br.id
+
+    LEFT JOIN payments p
+      ON p.booking_id = b.booking_id
+     AND p.payment_status = 'SUCCESS'
+
+    WHERE b.guest_id = $1
+    ORDER BY b.created_at DESC;
+  `;
+
+  const { rows } = await pool.query(query, [guest_id]);
+  return rows;
+}
+
 
   
 };

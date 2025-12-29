@@ -13,6 +13,8 @@ import bookingRoutes from './routes/booking.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import serviceRequestRoutes from "./routes/serviceRequest.routes.js";
 import assignedTaskRoutes from './routes/staff.task.routes.js';
+import checkincheckoutRoutes from './routes/checkincheckout.routes.js';
+import billingRoutes from './routes/billing.routes.js';
 
 
 dotenv.config();
@@ -21,7 +23,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 /* Middleware */
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', // frontend URL
+  credentials: true,               // allow cookies / auth headers
+}));
 app.use(express.json());
 
 
@@ -43,6 +48,8 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use("/api/service-requests", serviceRequestRoutes);
 app.use('/api/assigned-tasks', assignedTaskRoutes);
+app.use('/api/checkincheckout', checkincheckoutRoutes);
+app.use('/api/billing', billingRoutes);
 
 app.get('/', (req, res) => {
   res.send('SmartStay Hotel Server side');

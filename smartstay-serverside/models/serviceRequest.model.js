@@ -23,29 +23,36 @@ export const ServiceRequestModel = {
   },
 
   // Get requests by guest
-  getRequestsByGuestId: async (guest_id) => {
-    const query = `
-      SELECT
-        sr.id,
-        sr.guest_id,
-        sr.branch_id,
-        sr.service_id,
-        sr.request_status,
-        sr.request_note,
-        sr.requested_at,
-        sr.updated_at,
-        s.name AS service_name,
-        b.name AS branch_name
-      FROM service_requests sr
-      JOIN services s ON sr.service_id = s.id
-      JOIN branches b ON sr.branch_id = b.id
-      WHERE sr.guest_id = $1
-      ORDER BY sr.requested_at DESC;
-    `;
+ getRequestsByGuestId: async (guest_id) => {
+  const query = `
+    SELECT
+      sr.id,
+      sr.guest_id,
+      sr.branch_id,
+      sr.service_id,
+      sr.request_status,
+      sr.request_note,
+      sr.requested_at,
+      sr.updated_at,
 
-    const { rows } = await pool.query(query, [guest_id]);
-    return rows;
-  },
+      -- service info
+      s.name  AS service_name,
+      s.price AS service_price,
+
+      -- branch info
+      b.name AS branch_name
+
+    FROM service_requests sr
+    JOIN services s ON sr.service_id = s.id
+    JOIN branches b ON sr.branch_id = b.id
+
+    WHERE sr.guest_id = $1
+    ORDER BY sr.requested_at DESC;
+  `;
+
+  const { rows } = await pool.query(query, [guest_id]);
+  return rows;
+},
 
   // Admin: get requests by branch
   getRequestsByBranchId: async (branch_id) => {
