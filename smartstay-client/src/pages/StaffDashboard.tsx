@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ClipboardList, CalendarCheck, Wrench, User } from 'lucide-react';
+import { ClipboardList, CalendarCheck, User } from 'lucide-react';
 import './StaffDashboard.css';
-import type { RootState } from '../redux/store';
-import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import type { RootState, AppDispatch } from '../redux/store';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchTasksByStaffThunk, updateTaskStatusThunk } from '../redux/staffTasksSlice';
 
 interface Task {
   id: string;
@@ -13,25 +13,49 @@ interface Task {
 }
 
 const StaffDashboard: React.FC = () => {
-
-  
-  const [activeTab, setActiveTab] =
-    useState<'dashboard' | 'tasks' | 'services' | 'profile'>('dashboard');
-
-  const tasks: Task[] = [
-    { id: '1', title: 'Clean Room 204', status: 'pending', schedule: 'Today 10:00 AM' },
-    { id: '2', title: 'Maintenance – AC Check', status: 'in-progress', schedule: 'Today 1:00 PM' },
-    { id: '3', title: 'Prepare Hall A', status: 'completed', schedule: 'Yesterday' },
-  ];
-
+  const dispatch = useDispatch<AppDispatch>();
   const { currentStaff } = useSelector((state: RootState) => state.staff);
-  
+  const assignedTasks = useSelector((state: RootState) => state.staffTasks.tasks);
+
+  const [activeTab, setActiveTab] =
+    useState<'dashboard' | 'tasks' | 'profile'>('dashboard');
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [loadingTaskId, setLoadingTaskId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  
+  // Fetch tasks for the logged-in staff
+  useEffect(() => {
+    if (currentStaff?.id) {
+      dispatch(fetchTasksByStaffThunk(Number(currentStaff.id)));
+    }
+  }, [dispatch, currentStaff]);
 
+  // Map backend tasks to local UI type
+  const tasks: Task[] = assignedTasks.map(t => ({
+    id: t.id.toString(),
+    title: t.task_name,
+    status:
+      t.status === 'in_progress'
+        ? 'in-progress'
+        : t.status === 'completed'
+        ? 'completed'
+        : 'pending',
+    schedule: new Date(t.assigned_at).toLocaleString(),
+  }));
+
+  // New function to handle task updates
+  const updateTaskStatus = async (taskId: number, newStatus: 'in_progress' | 'completed') => {
+  try {
+    setLoadingTaskId(taskId);
+    await dispatch(updateTaskStatusThunk({ taskId, status: newStatus })).unwrap();
+    alert(`Task marked as ${newStatus === 'in_progress' ? 'in-progress' : 'completed'}`);
+  } catch (err: any) {
+    alert(`Failed to update task: ${err}`);
+  } finally {
+    setLoadingTaskId(null);
+  }
+};
 
 
   return (
@@ -43,33 +67,14 @@ const StaffDashboard: React.FC = () => {
           <h2>{currentStaff?.firstName} {currentStaff?.lastName}</h2>
           <p>Hotel Staff</p>
         </div>
-
         <nav className="sidebar-nav">
-          <button
-            className={activeTab === 'dashboard' ? 'active' : ''}
-            onClick={() => setActiveTab('dashboard')}
-          >
+          <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
             <ClipboardList /><span>Dashboard</span>
           </button>
-
-          <button
-            className={activeTab === 'tasks' ? 'active' : ''}
-            onClick={() => setActiveTab('tasks')}
-          >
+          <button className={activeTab === 'tasks' ? 'active' : ''} onClick={() => setActiveTab('tasks')}>
             <CalendarCheck /><span>My Tasks</span>
           </button>
-
-          <button
-            className={activeTab === 'services' ? 'active' : ''}
-            onClick={() => setActiveTab('services')}
-          >
-            <Wrench /><span>Service Requests</span>
-          </button>
-
-          <button
-            className={activeTab === 'profile' ? 'active' : ''}
-            onClick={() => setActiveTab('profile')}
-          >
+          <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>
             <User /><span>Profile</span>
           </button>
         </nav>
@@ -83,18 +88,9 @@ const StaffDashboard: React.FC = () => {
 
         {/* Tabs */}
         <div className="tab-bar">
-          <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
-            Overview
-          </button>
-          <button className={activeTab === 'tasks' ? 'active' : ''} onClick={() => setActiveTab('tasks')}>
-            Tasks
-          </button>
-          <button className={activeTab === 'services' ? 'active' : ''} onClick={() => setActiveTab('services')}>
-            Services
-          </button>
-          <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>
-            Profile
-          </button>
+          <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>Overview</button>
+          <button className={activeTab === 'tasks' ? 'active' : ''} onClick={() => setActiveTab('tasks')}>Tasks</button>
+          <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>Profile</button>
         </div>
 
         {/* Content */}
@@ -107,7 +103,7 @@ const StaffDashboard: React.FC = () => {
               </div>
               <div className="card">
                 <h3>Pending Tasks</h3>
-                <p>{tasks.filter(t => t.status === 'pending').length}</p>
+                <p>{tasks.filter(t => t.status === 'pending' || t.status === 'in-progress').length}</p>
               </div>
               <div className="card">
                 <h3>Completed</h3>
@@ -124,76 +120,44 @@ const StaffDashboard: React.FC = () => {
                   <strong>{task.title}</strong>
                   <p>Status: {task.status}</p>
                   <small>{task.schedule}</small>
+
+                  <div className="task-buttons">
+                    {task.status === 'pending' && (
+  <>
+    <button
+      disabled={loadingTaskId === Number(task.id)}
+      onClick={() => updateTaskStatus(Number(task.id), 'in_progress')}
+    >
+      {loadingTaskId === Number(task.id) ? 'Updating...' : 'Mark as In-Progress'}
+    </button>
+    <button
+      disabled={loadingTaskId === Number(task.id)}
+      onClick={() => updateTaskStatus(Number(task.id), 'completed')}
+    >
+      {loadingTaskId === Number(task.id) ? 'Updating...' : 'Mark as Completed'}
+    </button>
+  </>
+)}
+
+{task.status === 'in-progress' && (
+  <button
+    disabled={loadingTaskId === Number(task.id)}
+    onClick={() => updateTaskStatus(Number(task.id), 'completed')}
+  >
+    {loadingTaskId === Number(task.id) ? 'Updating...' : 'Mark as Completed'}
+  </button>
+)}
+
+                    {task.status === 'completed' && (
+                      <button disabled>Completed</button>
+                    )}
+                  </div>
                 </div>
               ))}
             </>
           )}
 
-          {activeTab === 'services' && (
-            <>
-              <h2>Service Requests</h2>
-              <div className="service-buttons">
-                <button>Housekeeping</button>
-                <button>Maintenance</button>
-                <button>Room Service</button>
-              </div>
-            </>
-          )}
-
-          {activeTab === 'profile' && (
-  <div className="profile-section">
-    <h2>Profile Settings</h2>
-
-    <div className="profile-grid">
-      {/* Avatar */}
-      <div className="avatar-section">
-        <div
-          className="profile-avatar"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {profileImage ? (
-            <img src={profileImage} alt="avatar" />
-          ) : (
-            <User />
-          )}
-        </div>
-
-        <div className="upload-hint">Tap avatar to upload</div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="file-input-hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              setProfileImage(URL.createObjectURL(file));
-            }
-          }}
-        />
-      </div>
-
-      {/* Form */}
-      <div className="profile-form">
-        <label>First Name</label>
-        <input type="text" placeholder="Staff" />
-
-        <label>Last Name</label>
-        <input type="text" placeholder="Member" />
-
-        <label>Email</label>
-        <input type="email" placeholder="staff@hotel.com" />
-
-        <label>Department</label>
-        <input type="text" placeholder="Housekeeping / Maintenance" />
-
-        <button>Update Profile</button>
-      </div>
-    </div>
-  </div>
-)}
-
+          {activeTab === 'profile' && ( <div className="profile-section"> <h2>Profile Settings</h2> <div className="profile-grid"> {/* Avatar */} <div className="avatar-section"> <div className="profile-avatar" onClick={() => fileInputRef.current?.click()} > {profileImage ? ( <img src={profileImage} alt="avatar" /> ) : ( <User /> )} </div> <div className="upload-hint">Tap avatar to upload</div> <input ref={fileInputRef} type="file" accept="image/*" className="file-input-hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) { setProfileImage(URL.createObjectURL(file)); } }} /> </div> {/* Form */} <div className="profile-form"> <label>First Name</label> <input type="text" placeholder="Staff" /> <label>Last Name</label> <input type="text" placeholder="Member" /> <label>Email</label> <input type="email" placeholder="staff@hotel.com" /> <label>Department</label> <input type="text" placeholder="Housekeeping / Maintenance" /> <button>Update Profile</button> </div> </div> </div> )}
         </div>
       </main>
     </div>

@@ -37,9 +37,12 @@ interface BackendServiceRequest {
   request_note: string | null;
   requested_at: string;
   service_name: string;
+  first_name?: string;
+  last_name?: string;
   guest_id?: string;
   branch_id?: number;
   service_id?: number;
+  branch_name?: string;
 }
 
 // Generic API response wrapper
@@ -49,8 +52,26 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+export interface ServiceRequest {
+  request_id: number;
+  guest_id: string;
+  branch_id: number;
+  service_id: number;
+  service_name: string;
+  request_note: string | null;
+  status: ServiceRequestStatus;
+  created_at: string;
+
+  // 👇 ADMIN VIEW DATA
+  guest_first_name?: string;
+  guest_last_name?: string;
+  branch_name?: string;
+}
+
 // Transform backend response to frontend format
-const transformServiceRequest = (backend: BackendServiceRequest): ServiceRequest => {
+const transformServiceRequest = (
+  backend: BackendServiceRequest
+): ServiceRequest => {
   return {
     request_id: backend.id,
     guest_id: backend.guest_id || '',
@@ -60,6 +81,11 @@ const transformServiceRequest = (backend: BackendServiceRequest): ServiceRequest
     request_note: backend.request_note,
     status: backend.request_status.toLowerCase() as ServiceRequestStatus,
     created_at: backend.requested_at,
+
+    // ✅ ADMIN DATA
+    guest_first_name: backend.first_name,
+    guest_last_name: backend.last_name,
+    branch_name: backend.branch_name
   };
 };
 
@@ -183,5 +209,28 @@ export const updateServiceRequestStatusAPI = async ({
     };
   }
   
+  return response;
+};
+
+
+export const getAllServiceRequestsAPI = async (): Promise<ApiResponse<ServiceRequest[]>> => {
+  const res = await fetch(`${BASE_URL}/service-requests/all`);
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || "Failed to fetch all service requests");
+  }
+
+  const response = await res.json();
+
+  if (Array.isArray(response)) {
+    const transformed = response.map(transformServiceRequest);
+    return {
+      success: true,
+      message: "All service requests fetched",
+      data: transformed
+    };
+  }
+
   return response;
 };

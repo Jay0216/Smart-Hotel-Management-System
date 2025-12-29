@@ -363,7 +363,7 @@
 }
 
 /* Modal input styling (Add/Edit Room) */
-.chart-modal-content input {
+.chart-modal-content input, textarea, select {
   width: 100%;
   padding: 0.6rem 0.75rem;
   border-radius: 0.5rem;

@@ -327,3 +327,42 @@
     align-items: center;
   }
 }
+
+
+/* Task Buttons Container */
+.booking-card .task-buttons {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+/* General Button Style */
+.booking-card .task-buttons button {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Completed Button */
+.booking-card .task-buttons button:first-child {
+  background-color: #4caf50; /* green */
+  color: white;
+}
+
+.booking-card .task-buttons button:first-child:hover {
+  background-color: #45a049;
+}
+
+/* In-Progress Button */
+.booking-card .task-buttons button:last-child {
+  background-color: #ff9800; /* orange */
+  color: white;
+}
+
+.booking-card .task-buttons button:last-child:hover {
+  background-color: #e68a00;
+}
+

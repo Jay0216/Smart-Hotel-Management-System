@@ -20,6 +20,15 @@ import { addServiceAsync, fetchServicesAsync } from '../redux/serviceSlice';
 import { staffRegisterThunk } from '../redux/staffSlice';
 import { receptionistRegisterThunk } from '../redux/receptionSlice';
 import { fetchAllStaffUsersThunk } from '../redux/allStaffUsersSlice';
+import {
+  fetchAllServiceRequests,
+  fetchBranchServiceRequests,
+  updateServiceRequestStatus
+} from '../redux/serviceRequestSlice';
+
+import { fetchAssignableStaffThunk } from '../redux/staffSlice';
+import { assignTaskThunk, fetchAssignedTasksThunk } from '../redux/staffTasksSlice';
+
 
 
 
@@ -348,6 +357,31 @@ useEffect(() => {
     }
   };
 
+  const {
+  requests: serviceRequests, loading: requestsLoading, error: requestsError
+} = useSelector((state: RootState) => state.serviceRequests);
+
+
+
+useEffect(() => {
+  if (activeTab === 'tasks') {
+    dispatch(fetchAllServiceRequests());
+  }
+}, [dispatch, activeTab]);
+
+
+  const { assignableStaff } = useSelector((state: RootState) => state.staff);
+
+  useEffect(() => {
+   if (showAssignModal && currentTask) {
+    dispatch(fetchAssignableStaffThunk(currentTask.branch_id));
+   }
+}, [dispatch, showAssignModal, currentTask]);
+
+const [taskName, setTaskName] = useState('');
+const [taskNotes, setTaskNotes] = useState('');
+
+
   return (
     <div className="admin-dashboard-page">
       {/* Sidebar */}
@@ -536,49 +570,92 @@ useEffect(() => {
   </div>
 )}
 
-
-          {activeTab==='tasks' && (
+{activeTab === 'tasks' && (
   <div className="card">
-    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-      <h2>Guest Requests / Staff Tasks</h2>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}
+    >
+      <h2>Guest Service Requests</h2>
     </div>
 
-    <div style={{ overflowX: 'auto', marginTop:'1rem' }}>
-      <table style={{ width:'100%' }}>
+    <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
+      <table style={{ width: '100%' }}>
         <thead>
           <tr>
             <th>Guest</th>
-            <th>Request</th>
-            <th>Hotel / Branch</th>
+            <th>Service</th>
+            <th>Note</th>
+            <th>Branch</th> {/* Show branch name instead of ID */}
             <th>Status</th>
             <th>Action</th>
           </tr>
         </thead>
+
         <tbody>
-          {tasks.map(t => (
-            <tr key={t.id}>
-              <td>{t.guest}</td>
-              <td>{t.request}</td>
-              <td>{t.hotel}</td>
-              <td>{t.status}</td>
-              <td>
-                <button
-                  onClick={() => {
-                    setCurrentTask(t);
-                    setSelectedStaff('');
-                    setShowAssignModal(true);
-                  }}
-                >
-                  Assign
-                </button>
-              </td>
+          {requestsLoading ? (
+            <tr>
+              <td colSpan={6}>Loading requests...</td>
             </tr>
-          ))}
+          ) : requestsError ? (
+            <tr>
+              <td colSpan={6}>{requestsError}</td>
+            </tr>
+          ) : serviceRequests.length === 0 ? (
+            <tr>
+              <td colSpan={6}>No service requests</td>
+            </tr>
+          ) : (
+            serviceRequests.map((req) => (
+              <tr key={req.request_id}>
+                {/* Guest */}
+                <td>
+                  {req.guest_first_name} {req.guest_last_name}
+                </td>
+
+                {/* Service */}
+                <td>{req.service_name}</td>
+
+                {/* Note */}
+                <td>{req.request_note || '—'}</td>
+
+                {/* Branch */}
+                <td>{req.branch_name || '—'}</td>
+
+                {/* Status */}
+                <td style={{ textTransform: 'capitalize' }}>{req.status}</td>
+
+                {/* Action */}
+                <td>
+                  {req.status === 'pending' && (
+                    <button
+                      onClick={() => {
+        setCurrentTask(req);             // store the current task
+        setShowAssignModal(true);        // open modal
+        dispatch(fetchAssignableStaffThunk(req.branch_id)); // fetch staff for this branch
+      }}
+                    >
+                      Assign
+                    </button>
+                  )}
+                  {req.status === 'in_progress' && <span>Assigned</span>}
+                  {req.status === 'completed' && <span>Completed</span>}
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
   </div>
 )}
+
+
+
+         
 
 {activeTab==='staff' && (
   <div className="card">
@@ -899,36 +976,66 @@ useEffect(() => {
 
 
 
-{showAssignModal && (
+{showAssignModal && currentTask && (
   <div className="chart-modal">
     <div className="chart-modal-content">
-      <h2>Assign Task: {currentTask?.request}</h2>
+      <h2>Assign Task: {currentTask.service_name}</h2>
+
       
-      <label>Select Staff Member</label>
       <select
         value={selectedStaff}
         onChange={(e) => setSelectedStaff(e.target.value)}
       >
         <option value="">-- Select Staff --</option>
-        {staffMembers.map(s => (
-          <option key={s.id} value={s.name}>{s.name}</option>
+        {assignableStaff.map(s => (
+          <option key={s.staff_id} value={s.staff_id}>
+            {s.first_name} {s.last_name} ({s.branch_name})
+          </option>
         ))}
       </select>
+
+      
+      <input
+        type="text"
+        placeholder="Enter task name"
+        value={taskName}
+        onChange={(e) => setTaskName(e.target.value)}
+      />
+
+      
+      <textarea
+        placeholder="Enter notes"
+        value={taskNotes}
+        onChange={(e) => setTaskNotes(e.target.value)}
+      />
 
       <div className="chart-modal-actions">
         <button onClick={() => setShowAssignModal(false)}>Cancel</button>
         <button
-          onClick={() => {
-            if (selectedStaff) {
-              const updatedTasks = tasks.map(task =>
-                task.id === currentTask.id
-                  ? { ...task, status: `Assigned to ${selectedStaff}` }
-                  : task
-              );
-              setTasks(updatedTasks);
-              setShowAssignModal(false);
-            } else {
+          onClick={async () => {
+            if (!selectedStaff) {
               alert('Please select a staff member');
+              return;
+            }
+
+            try {
+              await dispatch(assignTaskThunk({
+                requestId: currentTask.request_id,
+                staffId: Number(selectedStaff),
+                taskName: taskName || undefined,
+                notes: taskNotes || undefined,
+              })).unwrap();
+
+              alert('Task assigned successfully!');
+              setShowAssignModal(false);
+              setSelectedStaff('');
+              setCurrentTask(null);
+
+              // Optionally refetch tasks
+              dispatch(fetchAssignedTasksThunk());
+
+            } catch (err: any) {
+              alert(err.message || 'Failed to assign task');
             }
           }}
         >
@@ -938,6 +1045,7 @@ useEffect(() => {
     </div>
   </div>
 )}
+
 
 
 

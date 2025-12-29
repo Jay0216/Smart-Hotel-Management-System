@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { registerStaff, loginStaff } from '../API/staffAPI';
+import { registerStaff, loginStaff, fetchAssignableStaffByBranch } from '../API/staffAPI';
 import type { RegisterPayload, LoginPayload, AuthResponse } from '../API/hotelStaffAuthTypes';
 
 interface StaffState {
@@ -8,13 +8,25 @@ interface StaffState {
   token: string | null;
   loading: boolean;
   error: string | null;
+  assignableStaff: StaffMember[];
 }
+
+interface StaffMember {
+  staff_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  branch_id: string;
+  branch_name: string;
+}
+
 
 const initialState: StaffState = {
   currentStaff: JSON.parse(localStorage.getItem('staffUser') || 'null'),
   token: localStorage.getItem('staffToken'),
   loading: false,
   error: null,
+  assignableStaff: [],
 };
 
 // ---- Thunks ----
@@ -36,6 +48,22 @@ export const staffLoginThunk = createAsyncThunk<AuthResponse, LoginPayload>(
       return await loginStaff(data);
     } catch (err: any) {
       return rejectWithValue(err.message || 'Staff login failed');
+    }
+  }
+);
+
+// Thunk to fetch assignable staff
+export const fetchAssignableStaffThunk = createAsyncThunk<
+  StaffMember[],
+  number
+>(
+  'staff/fetchAssignable',
+  async (branchId, { rejectWithValue }) => {
+    try {
+      const res = await fetchAssignableStaffByBranch(branchId);
+      return res.staff;
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Failed to fetch staff');
     }
   }
 );
@@ -90,6 +118,19 @@ const staffSlice = createSlice({
       .addCase(staffLoginThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+
+      .addCase(fetchAssignableStaffThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAssignableStaffThunk.fulfilled, (state, action: PayloadAction<StaffMember[]>) => {
+        state.loading = false;
+        state.assignableStaff = action.payload;
+      })
+      .addCase(fetchAssignableStaffThunk.rejected, (state, action) => {
+       state.loading = false;
+       state.error = action.payload as string;
       });
   },
 });

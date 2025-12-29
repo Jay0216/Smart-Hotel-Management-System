@@ -4,7 +4,8 @@ import {
   createServiceRequestAPI,
   getGuestServiceRequestsAPI,
   getBranchServiceRequestsAPI,
-  updateServiceRequestStatusAPI
+  updateServiceRequestStatusAPI, 
+  getAllServiceRequestsAPI
 } from "../API/serviceRequestAPI";
 
 import type {
@@ -102,6 +103,22 @@ export const updateServiceRequestStatus = createAsyncThunk<
   }
 );
 
+export const fetchAllServiceRequests = createAsyncThunk<
+  ServiceRequest[],
+  void,
+  { rejectValue: string }
+>(
+  "serviceRequests/fetchAll",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getAllServiceRequestsAPI();
+      return response.data;
+    } catch (err: any) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 /* ================== SLICE ================== */
 
 const serviceRequestSlice = createSlice({
@@ -172,7 +189,22 @@ const serviceRequestSlice = createSlice({
             state.requests[index] = action.payload;
           }
         }
-      );
+      )
+
+      // FETCH ALL REQUESTS
+.addCase(fetchAllServiceRequests.pending, (state) => {
+  state.loading = true;
+  state.error = null;
+})
+.addCase(fetchAllServiceRequests.fulfilled, (state, action: PayloadAction<ServiceRequest[]>) => {
+  state.loading = false;
+  state.requests = action.payload;
+})
+.addCase(fetchAllServiceRequests.rejected, (state, action) => {
+  state.loading = false;
+  state.error = action.payload || "Failed to fetch all requests";
+})
+
   }
 });
 

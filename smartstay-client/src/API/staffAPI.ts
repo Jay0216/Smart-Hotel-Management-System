@@ -24,4 +24,10 @@ export const loginStaff = async (data: LoginPayload): Promise<AuthResponse> => {
   return res.json();
 };
 
+export const fetchAssignableStaffByBranch = async (branchId: number) => {
+  const res = await fetch(`${BASE}/staff/assignable/${branchId}`);
+  if (!res.ok) throw await res.json();
+  return res.json(); // returns { staff: [...] }
+};
+
 
