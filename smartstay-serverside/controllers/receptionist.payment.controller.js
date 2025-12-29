@@ -1,23 +1,27 @@
 import { PaymentModel } from "../models/payment.model.js";
 import { BookingModel } from "../models/booking.model.js";
-import { sendBookingSuccessEmail } from "../utils/nodemailer.js";
 import { getRoomById } from "../models/room.model.js";
 import { performCheckAction } from "../models/checkincheckout.model.js";
 import crypto from "crypto";
+import { sendEmail } from "../utils/nodemailer.js"; // updated email utility
 
 export const simulateReceptionPayment = async (req, res) => {
   try {
     const { guest_id, booking_id, amount, payment_method, receptionist_id } = req.body;
 
     // 1️⃣ Check if a payment already exists for this booking
-    const existingPayments = await PaymentModel.getPaymentsByBooking(booking_id);
+    const existingPayments = await PaymentModel.getPaymentsByBooking(booking_id, "checkout");
     let payment;
 
     if (existingPayments && existingPayments.length > 0) {
       // Update the latest payment amount and method
-      payment = await PaymentModel.updatePaymentAmount(existingPayments[0].payment_id, amount, payment_method);
+      payment = await PaymentModel.updatePaymentAmount(
+        existingPayments[0].payment_id,
+        amount,
+        payment_method
+      );
     } else {
-      // Create new payment
+      // Create new checkout payment
       const transaction_ref = `DUMMY-${crypto.randomUUID()}`;
       payment = await PaymentModel.createPayment({
         guest_id,
@@ -25,7 +29,8 @@ export const simulateReceptionPayment = async (req, res) => {
         amount,
         payment_method,
         payment_status: "PENDING",
-        transaction_ref
+        transaction_ref,
+        payment_type: "checkout" // mark it as checkout
       });
     }
 
@@ -35,38 +40,39 @@ export const simulateReceptionPayment = async (req, res) => {
         // ✅ Update payment status
         await PaymentModel.updatePaymentStatus(payment.payment_id, "SUCCESS");
 
-        // ✅ Update booking status to SUCCESS (if needed)
+        // ✅ Update booking status if needed
         const updatedBooking = await BookingModel.updateBookingStatus(booking_id, "SUCCESS");
 
-        // ✅ Perform checkout: update room status and insert checkin_checkout_log
+        // ✅ Perform checkout
         await performCheckAction({
-           bookingId: booking_id,
-           actionBy: "reception",
-           actionType: "checkout",
-           notes: "Checkout after payment",
-           force: true,
-           receptionistId: receptionist_id // or however you get the logged-in receptionist
+          bookingId: booking_id,
+          actionBy: "reception",
+          actionType: "checkout",
+          notes: "Checkout after payment",
+          force: true,
+          receptionistId: receptionist_id
         });
 
-        // ✅ Send booking confirmation email
+        // ✅ Send checkout email (not booking email)
         const room = await getRoomById(updatedBooking.room_id);
-        await sendBookingSuccessEmail({
+        await sendEmail({
           to: updatedBooking.email,
           firstName: updatedBooking.first_name,
           bookingId: updatedBooking.booking_id,
           amount,
-          roomName: room ? room.room_name : "Room"
+          roomName: room ? room.room_name : "Room",
+          type: "checkout"
         });
 
       } catch (err) {
-        console.error("Error updating statuses after payment 👉", err);
+        console.error("Error updating statuses after checkout payment 👉", err);
       }
     }, 1500);
 
     // 3️⃣ Return payment info immediately
     return res.status(201).json({
       success: true,
-      message: "Payment initiated (simulation)",
+      message: "Checkout payment initiated (simulation)",
       payment
     });
 
@@ -74,7 +80,7 @@ export const simulateReceptionPayment = async (req, res) => {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Payment simulation failed"
+      message: "Checkout payment simulation failed"
     });
   }
 };

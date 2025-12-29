@@ -129,7 +129,23 @@ getAllBookings: async () => {
 
     const { rows } = await pool.query(query);
     return rows;
-  }
+  },
+
+   getBookingById: async (booking_id) => {
+    const query = `
+      SELECT
+        b.*,
+        r.room_name,
+        br.name AS branch_name
+      FROM bookings b
+      JOIN rooms r ON b.room_id = r.id
+      JOIN branches br ON b.branch_id = br.id
+      WHERE b.booking_id = $1
+      LIMIT 1;
+    `;
+    const { rows } = await pool.query(query, [booking_id]);
+    return rows[0];
+  },
 
 
   
