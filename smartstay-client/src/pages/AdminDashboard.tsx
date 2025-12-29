@@ -28,6 +28,7 @@ import {
 
 import { fetchAssignableStaffThunk } from '../redux/staffSlice';
 import { assignTaskThunk, fetchAssignedTasksThunk } from '../redux/staffTasksSlice';
+import { fetchOccupancy, fetchRevenue, fetchBookingTrends } from "../redux/dashboardSlice";
 
 
 
@@ -62,27 +63,65 @@ const AdminDashboard: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { rooms = [], loading, error } = useSelector((state: RootState) => state.rooms);
   const { services = [], loading: serviceLoading, error: serviceError } = useSelector((state: RootState) => state.services);
-  const [chartModal, setChartModal] = useState<{ show: boolean, type: 'line' | 'bar', title: string, data: any }>({ show: false, type: 'line', title: '', data: null });
+  
   const chartRef = useRef<any>(null);
 
   // Dummy chart data
+  const { occupancy, revenue, bookingTrends, loading: dashboardLoading, error: dashboardError } = useSelector(
+    (state: RootState) => state.dashboard
+  );
+
+  const [chartModal, setChartModal] = useState<{ show: boolean; type: "line" | "bar"; title: string; data: any }>({
+    show: false,
+    type: "line",
+    title: "",
+    data: null
+  });
+
+  useEffect(() => {
+    dispatch(fetchOccupancy());
+    dispatch(fetchRevenue());
+    dispatch(fetchBookingTrends());
+  }, [dispatch]);
+
+  const openChartModal = (type: "line" | "bar", title: string, data: any) => {
+    setChartModal({ show: true, type, title, data });
+  };
+
+  // Transform slice data into Chart.js format
   const occupancyData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [{ label: 'Occupancy (%)', data: [60, 70, 80, 75, 90, 85, 70], borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.2)' }]
+    labels: occupancy.labels,
+    datasets: [
+      {
+        label: "Occupancy (%)",
+        data: occupancy.data,
+        borderColor: "#2563eb",
+        backgroundColor: "rgba(37,99,235,0.2)",
+        fill: true,
+      },
+    ],
   };
 
   const revenueData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-    datasets: [{ label: 'Revenue ($)', data: [1200, 1500, 1100, 1800, 2000], backgroundColor: '#4f46e5' }]
+    labels: revenue.labels,
+    datasets: [
+      {
+        label: "Revenue (LKR)",
+        data: revenue.data,
+        backgroundColor: "#4f46e5",
+      },
+    ],
   };
 
   const bookingTrendsData = {
-    labels: ['Standard', 'Deluxe', 'Suite'],
-    datasets: [{ label: 'Bookings', data: [25, 40, 15], backgroundColor: ['#2563eb', '#4f46e5', '#1d4ed8'] }]
-  };
-
-  const openChartModal = (type: 'line' | 'bar', title: string, data: any) => {
-    setChartModal({ show: true, type, title, data });
+    labels: bookingTrends.labels,
+    datasets: [
+      {
+        label: "Bookings",
+        data: bookingTrends.data,
+        backgroundColor: ["#2563eb", "#4f46e5", "#1d4ed8"],
+      },
+    ],
   };
 
 

@@ -20,3 +20,20 @@ export const simulatePaymentAPI = async (
 
   return res.json();
 };
+
+
+export const simulateReceptionistPaymentAPI = async (
+  payload: SimulatePaymentRequest
+): Promise<SimulatePaymentResponse> => {
+  const res = await fetch(`${BASE_URL}/simulatereception`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    throw new Error("Payment simulation failed");
+  }
+
+  return res.json();
+};

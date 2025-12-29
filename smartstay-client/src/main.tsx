@@ -24,6 +24,7 @@ import PaymentPage from './pages/Payment.tsx'
 
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
+import ReceptionistPaymentPage from './pages/ReceptionistPayment.tsx'
 
 // Stripe test key
 const stripePromise = loadStripe('pk_test_1234567890abcdef');
@@ -95,6 +96,11 @@ const routes = createBrowserRouter([
   {
     path: '/payment',
     element: <PaymentPage />
+  },
+
+  {
+    path: '/receptionistpayment',
+    element: <ReceptionistPaymentPage />
   },
 ])
 

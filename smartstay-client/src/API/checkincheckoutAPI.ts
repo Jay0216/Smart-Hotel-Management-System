@@ -9,7 +9,7 @@ export interface CheckActionPayload {
   bookingId: number;
   actionBy: ActionBy;
   actionType: ActionType;
-  staffId?: number;   // only for receptionist
+  receptionistId?: number;   // only for receptionist
   notes?: string;
 }
 

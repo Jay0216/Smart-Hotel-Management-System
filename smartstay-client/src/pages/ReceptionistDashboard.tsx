@@ -1,189 +1,301 @@
-// ReceptionistDashboard.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ClipboardList,
   LogIn,
   LogOut,
-  Bed,
   User,
-  Search,
-  CreditCard
+  Printer
 } from 'lucide-react';
 import './ReceptionistDashboard.css';
-import { useSelector } from 'react-redux';
-import type { RootState } from '../redux/store';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState, AppDispatch } from '../redux/store';
+import { fetchAllBookings } from '../redux/bookingSlice';
+import { checkActionThunk } from '../redux/checkincheckoutSlice';
+import type { BookingResponse } from '../API/bookingAPI';
+import { fetchGuestServiceRequests } from '../redux/serviceRequestSlice';
+import { fetchBillingSummaryThunk } from '../redux/billingSlice';
 import { useNavigate } from 'react-router-dom';
 
-interface Reservation {
-  id: string;
-  guestName: string;
-  email: string;
-  roomType: string;
-  nights: number;
-  amount: number;
-  status: 'reserved' | 'checked-in' | 'checked-out';
-}
-
-interface Room {
-  id: string;
-  type: string;
-  status: 'available' | 'occupied';
-}
+type Tab = 'dashboard' | 'checkin-checkout' | 'profile';
 
 const ReceptionistDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] =
-    useState<'dashboard' | 'walk-in' | 'reservations' | 'rooms' | 'billing' | 'profile'>('dashboard');
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [receiptBooking, setReceiptBooking] =
+    useState<BookingResponse | null>(null);
 
-  const reservations: Reservation[] = [
-    { id: 'R001', guestName: 'John Doe', email: 'john@mail.com', roomType: 'Deluxe', nights: 2, amount: 300, status: 'checked-in' },
-    { id: 'R002', guestName: 'Jane Smith', email: 'jane@mail.com', roomType: 'Suite', nights: 3, amount: 600, status: 'reserved' },
-  ];
+  const receiptRef = useRef<HTMLDivElement>(null);
 
-  const rooms: Room[] = [
-    { id: '101', type: 'Standard', status: 'available' },
-    { id: '102', type: 'Deluxe', status: 'occupied' },
-    { id: '103', type: 'Suite', status: 'available' },
-  ];
+  const [alert, setAlert] = useState<{
+  type: 'success' | 'error';
+  message: string;
+} | null>(null);
+
+  const { currentReceptionist } = useSelector(
+    (state: RootState) => state.receptionist
+  );
+
+  const { allBookings, status } = useSelector(
+    (state: RootState) => state.booking
+  );
+
+  const loading = status === 'loading';
+
+  useEffect(() => {
+    dispatch(fetchAllBookings());
+  }, [dispatch]);
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const { currentReceptionist } = useSelector((state: RootState) => state.receptionist);
+  const handleCheckAction = async (
+  booking: BookingResponse,
+  actionType: 'checkin' | 'checkout'
+) => {
+  try {
+    await dispatch(
+      checkActionThunk({
+        bookingId: booking.booking_id,
+        actionBy: 'reception',
+        receptionistId: Number(currentReceptionist?.id), // must NOT be null
+        actionType
+      })
+    ).unwrap();
 
-  
+    // ✅ Success alert
+    window.alert(
+      actionType === 'checkin'
+        ? 'Guest checked in successfully'
+        : 'Guest checked out successfully'
+    );
+
+    // 🧾 Show receipt only after checkout
+    if (actionType === 'checkout') {
+      setReceiptBooking(booking);
+    }
+
+    // 🔄 Refresh bookings list
+    dispatch(fetchAllBookings());
+  } catch (err: any) {
+    // ❌ Error alert
+    window.alert(err?.message || 'Operation failed. Please try again.');
+  }
+};
+
+const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+const [selectedBooking, setSelectedBooking] =
+  useState<BookingResponse | null>(null);
+
+
+const { requests: serviceRequests } = useSelector(
+  (state: RootState) => state.serviceRequests
+);
+
+useEffect(() => {
+  if (selectedBooking?.guest_id) {
+    dispatch(fetchGuestServiceRequests(selectedBooking.guest_id));
+  }
+}, [selectedBooking, dispatch]);
+
+useEffect(() => {
+  if (selectedBooking?.guest_id) {
+    dispatch(fetchBillingSummaryThunk(selectedBooking.guest_id));
+  }
+}, [selectedBooking, dispatch]);
+
+
+const {
+  data: billingSummary,
+  loading: billingLoading,
+  error: billingError
+} = useSelector((state: RootState) => state.billing);
+
+const handleGuestCheckout = async (booking: any) => {
+  try {
+    // Fetch completed services for this guest
+    const completedServices = serviceRequests.filter(
+      (r) => r.status?.toLowerCase() === 'completed'
+    );
+
+    const roomAmount = Number(booking.paid_amount || 0);
+    const servicesAmount = completedServices
+      .map(s => Number(s.service_price || 0))
+      .reduce((a, b) => a + b, 0);
+    const taxRate = billingSummary?.taxRate || 0;
+
+    const subtotal = roomAmount + servicesAmount;
+    const totalWithTax = subtotal + (subtotal * (taxRate / 100));
+
+    // Prepare data to pass to payment page
+    
+
+    // Redirect to payment page
+    navigate('/receptionistpayment', {
+        state: {
+          bookingId: booking.booking_id,
+          receptionistId: Number(currentReceptionist?.id),
+          amount: totalWithTax
+        }
+      });
+
+  } catch (error: any) {
+    console.error('Checkout error:', error);
+    window.alert(error?.message || 'Checkout failed');
+  }
+};
+
+
+
+  const printReceipt = () => {
+    if (!receiptRef.current) return;
+
+    const content = receiptRef.current.innerHTML;
+    const win = window.open('', '', 'width=800,height=600');
+
+    if (win) {
+      win.document.write(`
+        <html>
+          <head>
+            <title>Payment Receipt</title>
+            <style>
+              body { font-family: Arial; padding: 20px; }
+              h2 { text-align: center; }
+              .row { display:flex; justify-content:space-between; margin:6px 0; }
+              hr { margin: 15px 0; }
+            </style>
+          </head>
+          <body>${content}</body>
+        </html>
+      `);
+      win.document.close();
+      win.print();
+    }
+  };
 
   return (
     <div className="reception-dashboard-page">
+
+      {/* SIDEBAR */}
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="avatar"><User /></div>
-          <h2>{currentReceptionist?.firstName} {currentReceptionist?.lastName}</h2>
-          <p>Front Desk</p>
+          <h2>
+            {currentReceptionist?.firstName}{' '}
+            {currentReceptionist?.lastName}
+          </h2>
+          <p>Receptionist</p>
         </div>
 
         <nav className="sidebar-nav">
-          {['dashboard','walk-in','reservations','rooms','billing','profile'].map(tab=>(
-            <button
-              key={tab}
-              className={activeTab===tab?'active':''}
-              onClick={()=>setActiveTab(tab as any)}
-            >
-              {tab==='dashboard' && <ClipboardList />}
-              {tab==='walk-in' && <LogIn />}
-              {tab==='reservations' && <Search />}
-              {tab==='rooms' && <Bed />}
-              {tab==='billing' && <CreditCard />}
-              {tab==='profile' && <User />}
-              <span>{tab.charAt(0).toUpperCase()+tab.slice(1)}</span>
-            </button>
-          ))}
+          <button
+            className={activeTab === 'dashboard' ? 'active' : ''}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <ClipboardList /> Dashboard
+          </button>
+
+          <button
+            className={activeTab === 'checkin-checkout' ? 'active' : ''}
+            onClick={() => setActiveTab('checkin-checkout')}
+          >
+            <LogIn /> Check-In / Check-Out
+          </button>
+
+          <button
+            className={activeTab === 'profile' ? 'active' : ''}
+            onClick={() => setActiveTab('profile')}
+          >
+            <User /> Profile
+          </button>
         </nav>
       </aside>
 
+      {/* MAIN */}
       <main className="main-content">
         <header className="dashboard-header">
           <h1>Receptionist Dashboard</h1>
         </header>
 
-        <div className="tab-bar">
-          {['dashboard','walk-in','reservations','rooms','billing','profile'].map(tab=>(
-            <button
-              key={tab}
-              className={activeTab===tab?'active':''}
-              onClick={()=>setActiveTab(tab as any)}
-            >
-              {tab.charAt(0).toUpperCase()+tab.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        <div className="dashboard-body">
-          {activeTab==='dashboard' && (
-            <div className="cards-grid">
-              <div className="card"><h3>Total Reservations</h3><p>{reservations.length}</p></div>
-              <div className="card"><h3>Available Rooms</h3><p>{rooms.filter(r=>r.status==='available').length}</p></div>
-              <div className="card"><h3>Occupied Rooms</h3><p>{rooms.filter(r=>r.status==='occupied').length}</p></div>
+        {/* DASHBOARD */}
+        {activeTab === 'dashboard' && (
+          <div className="cards-grid">
+            <div className="card">
+              <h3>Total Bookings</h3>
+              <p>{allBookings.length}</p>
             </div>
-          )}
 
-          {activeTab==='walk-in' && (
-            <div className="walkin-wrapper">
-              <div className="form-card wide">
-                <h2>Manual Walk-In Check-In</h2>
-                <input placeholder="Guest Name" />
-                <input type="email" placeholder="Guest Email" />
-                <input placeholder="NIC / Passport" />
-                <select>
-                  <option>Select Room Type</option>
-                  <option>Standard</option>
-                  <option>Deluxe</option>
-                  <option>Suite</option>
-                </select>
-                <button><LogIn /> Check-In</button>
+            <div className="card">
+              <h3>Checked-In</h3>
+              <p>
+                {allBookings.filter(
+                  b => b.booking_status === 'checked_in'
+                ).length}
+              </p>
+            </div>
+
+            <div className="card">
+              <h3>Checked-Out</h3>
+              <p>
+                {allBookings.filter(
+                  b => b.booking_status === 'checked_out'
+                ).length}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* CHECK-IN / CHECK-OUT */}
+        {activeTab === 'checkin-checkout' && (
+          <div className="checkin-wrapper">
+            <h2>Guest Check-In / Check-Out</h2>
+
+            {loading && <p>Loading bookings…</p>}
+
+            {!loading && allBookings.map(b => (
+              <div key={b.booking_id} className="booking-card">
+                <div>
+                  <strong>
+                    {b.first_name} {b.last_name}
+                  </strong>
+                  <p>{b.email}</p>
+                  <p>Room ID: {b.room_id}</p>
+                  <p>Nights: {b.nights}</p>
+                  <p>Status: <b>{b.booking_status}</b></p>
+                </div>
+
+                <div className="booking-actions">
+                  {b.booking_status === 'SUCCESS' && (
+                    <button
+                      onClick={() => handleCheckAction(b, 'checkin')}
+                    >
+                      <LogIn /> Check-In
+                    </button>
+                  )}
+
+                  {b.booking_status === 'checked_in' && (
+                    <button
+                      className="checkout"
+                      onClick={() => {
+                        setSelectedBooking(b);
+                        setShowCheckoutModal(true);
+                       }} 
+                    >
+                      <LogOut /> Check-Out
+                    </button>
+                  )}
+
+                  {b.booking_status === 'checked_out' && (
+                    <button disabled>✔ Checked Out</button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
+        )}
 
-          {activeTab==='reservations' && (
-            <div>
-              <h2>Reservation Verification</h2>
-              {reservations.map(r=>(
-                <div key={r.id} className="booking-card">
-                  <strong>{r.guestName}</strong>
-                  <p>{r.email}</p>
-                  <p>Room: {r.roomType}</p>
-                  <p>Status: {r.status}</p>
-                  <div className="booking-actions">
-                    <button><LogIn /> Check-In</button>
-                    <button className="checkout"><LogOut /> Check-Out</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab==='rooms' && (
-            <div className="rooms-grid">
-              {rooms.map(room=>(
-                <div key={room.id} className={`room-card ${room.status}`}>
-                  <strong>Room {room.id}</strong>
-                  <p>{room.type}</p>
-                  <p>{room.status}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab==='billing' && (
-  <div className="billing-section">
-    {reservations.filter(r=>r.status!=='checked-out').map(r=>(
-      <div key={r.id} className="bill-card">
-        <div className="bill-info">
-          <strong>{r.guestName}</strong>
-          <p>{r.email}</p>
-          <p>{r.roomType} • {r.nights} Nights</p>
-          <p className="total">Total: ${r.amount}</p>
-        </div>
-
-        <div className="bill-actions">
-          <select>
-            <option>Select Payment Method</option>
-            <option>Cash</option>
-            <option>Card</option>
-            <option>Bank Transfer</option>
-          </select>
-
-          <button>
-            <CreditCard /> Mark Paid & Check-Out
-          </button>
-        </div>
-      </div>
-    ))}
-  </div>
-)}
-
-
-          {activeTab === 'profile' && (
+        {/* PROFILE */}
+        {activeTab === 'profile' && (
             <div className="profile-section">
               <h2>Profile Settings</h2>
           
@@ -236,7 +348,138 @@ const ReceptionistDashboard: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
+
+        {/* RECEIPT MODAL */}
+        {receiptBooking && (
+          <div className="receipt-modal">
+            <div className="receipt-content">
+              <div ref={receiptRef}>
+                <h2>Hotel Payment Receipt</h2>
+                <hr />
+
+                <div className="row">
+                  <span>Booking ID</span>
+                  <span>{receiptBooking.booking_id}</span>
+                </div>
+
+                <div className="row">
+                  <span>Guest</span>
+                  <span>
+                    {receiptBooking.first_name} {receiptBooking.last_name}
+                  </span>
+                </div>
+
+                <div className="row">
+                  <span>Email</span>
+                  <span>{receiptBooking.email}</span>
+                </div>
+
+                <div className="row">
+                  <span>Room ID</span>
+                  <span>{receiptBooking.room_id}</span>
+                </div>
+
+                <div className="row">
+                  <span>Nights</span>
+                  <span>{receiptBooking.nights}</span>
+                </div>
+
+                <div className="row">
+                  <span>Total Paid</span>
+                  <span>
+                    LKR {Number(receiptBooking.paid_amount || 0).toLocaleString()}
+                  </span>
+                </div>
+
+                <hr />
+                <p style={{ textAlign: 'center' }}>
+                  ✅ Payment Completed Successfully
+                </p>
+              </div>
+
+              <button onClick={printReceipt}>
+                <Printer /> Print Receipt
+              </button>
+
+              <button onClick={() => setReceiptBooking(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+
+
+{showCheckoutModal && selectedBooking && (
+  <div className="checkout-modal">
+    <div className="checkout-content">
+      <h2>Checkout Summary</h2>
+      <hr />
+
+      {/* Guest Info */}
+      <p><b>Guest:</b> {selectedBooking.first_name} {selectedBooking.last_name}</p>
+      <p><b>Room ID:</b> {selectedBooking.room_id}</p>
+      <p><b>Nights:</b> {selectedBooking.nights}</p>
+
+      <hr />
+
+      {/* Billing Summary from backend */}
+      {billingLoading && <p>Loading billing summary...</p>}
+      {billingError && <p style={{ color: 'red' }}>Failed to load billing summary</p>}
+
+      {!billingLoading && !billingError && billingSummary && (
+        <>
+          <div className="row">
+            <span>Room Charges</span>
+            <span>LKR {Number(billingSummary.roomCharges).toLocaleString()}</span>
+          </div>
+
+          <div className="row">
+            <span>Service Charges</span>
+            <span>LKR {Number(billingSummary.serviceCharges || 0).toLocaleString()}</span>
+          </div>
+
+          <div className="row">
+            <span>Tax</span>
+            <span>{billingSummary.taxRate}%</span>
+          </div>
+
+          <hr />
+
+          <div className="row total">
+            <b>Total</b>
+            <b>LKR {Number(billingSummary.total).toLocaleString()}</b>
+          </div>
+        </>
+      )}
+
+      <div className="checkout-actions">
+        <button
+          className="cancel"
+          onClick={() => {
+            setShowCheckoutModal(false);
+            setSelectedBooking(null);
+          }}
+        >
+          Cancel
+        </button>
+
+        <button
+          className="confirm"
+          onClick={async () => {
+            setShowCheckoutModal(false);
+            await handleGuestCheckout(selectedBooking);
+            setSelectedBooking(null);
+          }}
+        >
+          Confirm Checkout
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
       </main>
     </div>
   );

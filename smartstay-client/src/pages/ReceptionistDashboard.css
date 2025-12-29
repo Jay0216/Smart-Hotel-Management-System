@@ -249,3 +249,52 @@
     max-width: 100%;
   }
 }
+
+
+.checkout-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.checkout-content {
+  background: #1e293b;
+  padding: 20px;
+  width: 420px;
+  border-radius: 10px;
+}
+
+.checkout-content .row {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0;
+}
+
+.checkout-content .total {
+  font-size: 18px;
+}
+
+.checkout-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.checkout-actions .confirm {
+  background: #16a34a;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+}
+
+.checkout-actions .cancel {
+  background: #e5e7eb;
+  padding: 8px 14px;
+  border-radius: 6px;
+}
+

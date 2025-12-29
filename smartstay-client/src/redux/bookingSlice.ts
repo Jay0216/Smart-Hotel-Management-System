@@ -5,6 +5,7 @@ import * as bookingAPI from '../API/bookingAPI';
 interface BookingState {
   currentBooking: BookingResponse | null;
   guestBookings: BookingResponse[];
+  allBookings: BookingResponse[],
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
 }
@@ -12,6 +13,7 @@ interface BookingState {
 const initialState: BookingState = {
   currentBooking: null,
   guestBookings: [],
+  allBookings: [],
   status: 'idle',
   error: null,
 };
@@ -48,6 +50,18 @@ export const fetchGuestBookings = createAsyncThunk(
   async (guestId: string, { rejectWithValue }) => {
     try {
       const response = await bookingAPI.getBookingsByGuestId(guestId);
+      return response; // BookingResponse[]
+    } catch (err: any) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const fetchAllBookings = createAsyncThunk(
+  'booking/fetchAllBookings',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await bookingAPI.getAllBookings();
       return response; // BookingResponse[]
     } catch (err: any) {
       return rejectWithValue(err.message);
@@ -108,7 +122,20 @@ const bookingSlice = createSlice({
       .addCase(fetchGuestBookings.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload as string;
-      });
+      })
+
+      .addCase(fetchAllBookings.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(fetchAllBookings.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.allBookings = action.payload;
+      })
+     .addCase(fetchAllBookings.rejected, (state, action) => {
+      state.status = 'failed';
+      state.error = action.payload as string;
+     });
   },
 });
 

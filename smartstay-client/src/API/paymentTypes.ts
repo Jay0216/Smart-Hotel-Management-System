@@ -6,6 +6,14 @@ export interface SimulatePaymentRequest {
   payment_method: "CARD" | "CASH" | "ONLINE";
 }
 
+export interface SimulateReceptionistPaymentRequest {
+  guest_id: number;
+  booking_id: number;
+  receptionist_id: number;
+  amount: number;
+  payment_method: "CARD" | "CASH" | "ONLINE";
+}
+
 // payment object returned from backend
 export interface Payment {
   payment_id: number;

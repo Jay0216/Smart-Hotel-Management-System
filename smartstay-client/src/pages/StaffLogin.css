@@ -112,6 +112,7 @@
   transition: border-color 0.3s, box-shadow 0.3s;
   box-sizing: border-box;
   background-color: #f9fafb; /* light background for inputs */
+  color: #111827;
 }
 
 .auth-input:focus {

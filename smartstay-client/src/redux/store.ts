@@ -13,6 +13,7 @@ import serviceRequestReducer from './serviceRequestSlice'; // ✅ import service
 import staffTasksReducer from './staffTasksSlice'; // ✅ import staffTasksSlice
 import checkinCheckoutReducer from './checkincheckoutSlice'; // ✅ import checkincheckoutSlice
 import billingReducer from './billingSlice'; // ✅ import billingSlice
+import dashboardReducer from "./dashboardSlice"; // ✅ add this
 
 export const store = configureStore({
   reducer: {
@@ -29,6 +30,7 @@ export const store = configureStore({
     staffTasks: staffTasksReducer,
     checkinCheckout: checkinCheckoutReducer,
     billing: billingReducer,
+    dashboard: dashboardReducer,
   },
 });
 

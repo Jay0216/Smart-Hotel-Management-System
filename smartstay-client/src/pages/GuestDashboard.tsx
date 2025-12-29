@@ -412,13 +412,13 @@ const handleGuestCheckout = async (booking: any) => {
       });
     } else {
       // Normal checkout – no completed services
-      const result = await dispatch(
-        checkActionThunk({
-          bookingId: booking.booking_id,
-          actionBy: 'guest',
-          actionType: 'checkout'
-        })
-      ).unwrap();
+      //const result = await dispatch(
+        //checkActionThunk({
+          //bookingId: booking.booking_id,
+          //actionBy: 'guest',
+          //actionType: 'checkout'
+       // })
+     // ).unwrap();
 
       alert('Checkout successful ✅');
 
