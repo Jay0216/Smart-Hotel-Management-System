@@ -9,7 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 const PaymentPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { bookingId, amount } = location.state || {};
+  const { bookingId, amount, paymentType } = location.state || {};
 
   const [guestInfo, setGuestInfo] = useState({
     firstName: '',
@@ -66,7 +66,8 @@ const PaymentPage: React.FC = () => {
           guest_id: Number(currentGuest?.id),
           booking_id: Number(bookingId),
           amount,
-          payment_method: "CARD"
+          payment_method: "CARD",
+          paymentType // pass booking or checkout type
         })
       );
 

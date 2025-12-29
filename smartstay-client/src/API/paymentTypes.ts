@@ -4,6 +4,7 @@ export interface SimulatePaymentRequest {
   booking_id: number;
   amount: number;
   payment_method: "CARD" | "CASH" | "ONLINE";
+  paymentType?: 'booking' | 'checkout';
 }
 
 export interface SimulateReceptionistPaymentRequest {

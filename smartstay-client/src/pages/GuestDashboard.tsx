@@ -210,6 +210,12 @@ const handleBookingSubmit = async () => {
     return;
   }
 
+  // ✅ Guest capacity check
+  if (Number(guests) > selectedRoom.capacity) {
+    alert(`The selected room has a maximum capacity of ${selectedRoom.capacity} guests.`);
+    return;
+  }
+
   // Prepare booking payload
   const bookingData = {
     room_id: selectedRoom.id,
@@ -246,7 +252,8 @@ const handleBookingSubmit = async () => {
         state: {
           bookingId: bookingId,
           amount,
-          currency: 'LKR'
+          currency: 'LKR',
+          paymentType: 'booking'
         }
       });
       
@@ -385,49 +392,26 @@ const { data: billingSummary, loading: billingLoading, error: billingError } = u
 
 const handleGuestCheckout = async (booking: any) => {
   try {
-    // Check if guest has any completed services
     const completedServices = guestServiceRequests.filter(
       (r) => r.status.toLowerCase() === 'completed'
     );
 
-    if (completedServices.length > 0) {
-      // Calculate total amount (room + services + tax if any)
-      const roomAmount = Number(booking.paid_amount || 0);
+    const roomAmount = Number(booking.paid_amount || 0);
+    const servicesAmount = completedServices
+      .map(s => Number(s.service_price || 0))
+      .reduce((a, b) => a + b, 0);
+    const taxRate = billingSummary?.taxRate || 0;
+    const totalAmount = roomAmount + servicesAmount;
+    const totalWithTax = totalAmount + (totalAmount * (taxRate / 100));
 
-      const servicesAmount = completedServices
-        .map(s => Number(s.service_price || 0))
-        .reduce((a, b) => a + b, 0);
-
-      const taxRate = billingSummary?.taxRate || 0;
-
-      const totalAmount = roomAmount + servicesAmount;
-      const totalWithTax = totalAmount + (totalAmount * (taxRate / 100));
-
-      // Redirect to Payment page with total including services
-      navigate('/payment', {
-        state: {
-          bookingId: booking.booking_id,
-          amount: totalWithTax
-        }
-      });
-    } else {
-      // Normal checkout – no completed services
-      //const result = await dispatch(
-        //checkActionThunk({
-          //bookingId: booking.booking_id,
-          //actionBy: 'guest',
-          //actionType: 'checkout'
-       // })
-     // ).unwrap();
-
-      alert('Checkout successful ✅');
-
-      // Refresh bookings and billing summary
-      if (currentGuest?.id) {
-        dispatch(fetchGuestBookings(currentGuest.id));
-        dispatch(fetchBillingSummaryThunk(currentGuest.id));
+    // Redirect to Payment page with total and specify paymentType = "checkout"
+    navigate('/payment', {
+      state: {
+        bookingId: booking.booking_id,
+        amount: totalWithTax,
+        paymentType: 'checkout' // pass checkout type to server
       }
-    }
+    });
   } catch (error: any) {
     console.error('Checkout error:', error);
     alert(error?.message || 'Checkout failed');
@@ -711,9 +695,18 @@ const handleGuestCheckout = async (booking: any) => {
         </div>
         <div className="room-footer">
           <span className="room-price">
-            LKR {room.price.split(' ')[0]} <small>/ night</small>
+            LKR {room.price.split(' ')[0]} <small>/ night </small>
+            <small>{room.status}</small>
           </span>
-          <button className="view-btn" onClick={() => openBookingModal(room)}>View</button>
+          <button 
+            className="view-btn"
+              onClick={() => openBookingModal(room)}
+              disabled={room.status.toLowerCase() === "booked"} // disable if booked
+              style={{
+                cursor: room.status.toLowerCase() === "booked" ? "not-allowed" : "pointer",
+                opacity: room.status.toLowerCase() === "booked" ? 0.5 : 1
+              }}
+          >View</button>
         </div>
       </div>
     </div>
