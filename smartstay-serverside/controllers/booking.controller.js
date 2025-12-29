@@ -77,3 +77,17 @@ export const getGuestBookings = async (req, res) => {
     res.status(500).json({ message: error.message || 'Failed to fetch guest bookings' });
   }
 };
+
+
+
+export const getAllBookings = async (req, res) => {
+  try {
+    const bookings = await BookingModel.getAllBookings();
+    res.status(200).json(bookings);
+  } catch (error) {
+    console.error('GET ALL BOOKINGS ERROR 👉', error);
+    res.status(500).json({
+      message: error.message || 'Failed to fetch bookings'
+    });
+  }
+};

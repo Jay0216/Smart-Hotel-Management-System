@@ -15,6 +15,7 @@ import serviceRequestRoutes from "./routes/serviceRequest.routes.js";
 import assignedTaskRoutes from './routes/staff.task.routes.js';
 import checkincheckoutRoutes from './routes/checkincheckout.routes.js';
 import billingRoutes from './routes/billing.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
 
 
 dotenv.config();
@@ -50,6 +51,7 @@ app.use("/api/service-requests", serviceRequestRoutes);
 app.use('/api/assigned-tasks', assignedTaskRoutes);
 app.use('/api/checkincheckout', checkincheckoutRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 app.get('/', (req, res) => {
   res.send('SmartStay Hotel Server side');
