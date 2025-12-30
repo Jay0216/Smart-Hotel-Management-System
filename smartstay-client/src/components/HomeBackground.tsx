@@ -1,8 +1,15 @@
 import React from "react";
 import { BedDouble, ConciergeBell, Sparkles, MapPin } from "lucide-react";
 import "./HomeBackground.css";
+import { useNavigate } from "react-router-dom";
 
 const HomeBackground: React.FC = () => {
+
+  const navigate = useNavigate()
+
+  const NavigateToGuest = () => {
+    navigate('/guestauth')
+  }
   return (
     <div className="home-wrapper">
       {/* ================= HERO ================= */}
@@ -16,8 +23,8 @@ const HomeBackground: React.FC = () => {
           </p>
 
           <div className="hero-buttons">
-            <button className="btn btn-primary">Book a Stay</button>
-            <button className="btn btn-outline">Explore Services</button>
+            <button className="btn btn-primary" onClick={NavigateToGuest}>Book a Stay</button>
+            <button className="btn btn-outline" onClick={NavigateToGuest}>Explore Services</button>
           </div>
         </div>
       </section>

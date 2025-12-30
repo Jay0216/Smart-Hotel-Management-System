@@ -598,7 +598,7 @@ const handleGuestCheckout = async (booking: any) => {
   <h3 className="billing-title">Billing Summary</h3>
 
   {billingLoading && <p>Loading billing summary...</p>}
-  {billingError && <p style={{ color: 'red' }}>Failed to load billing summary</p>}
+  {billingError && <p style={{ color: 'red' }}>Not Currently Having Bookings or Services.</p>}
 
   {!billingLoading && !billingError && billingSummary && (
   <>
@@ -696,7 +696,6 @@ const handleGuestCheckout = async (booking: any) => {
         <div className="room-footer">
           <span className="room-price">
             LKR {room.price.split(' ')[0]} <small>/ night </small>
-            <small>{room.status}</small>
           </span>
           <button 
             className="view-btn"

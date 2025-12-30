@@ -145,33 +145,34 @@ const handleGuestCheckout = async (booking: any) => {
   }
 };
 
+useEffect(() => {
+  if (selectedBooking?.guest_id) {
+    dispatch(fetchGuestServiceRequests(selectedBooking.guest_id));
+  }
+}, [dispatch, selectedBooking]);
 
 
-  const printReceipt = () => {
-    if (!receiptRef.current) return;
+const { requests: guestServiceRequests, loading: serviceRequestsLoading, error: serviceRequestsError } =
+  useSelector((state: RootState) => state.serviceRequests);
 
-    const content = receiptRef.current.innerHTML;
-    const win = window.open('', '', 'width=800,height=600');
+  const serviceCharges = guestServiceRequests
+   .filter(r => r.status?.toLowerCase() === 'completed')
+   .map(r => Number(r.service_price) || 0)
+   .reduce((a, b) => a + b, 0);
 
-    if (win) {
-      win.document.write(`
-        <html>
-          <head>
-            <title>Payment Receipt</title>
-            <style>
-              body { font-family: Arial; padding: 20px; }
-              h2 { text-align: center; }
-              .row { display:flex; justify-content:space-between; margin:6px 0; }
-              hr { margin: 15px 0; }
-            </style>
-          </head>
-          <body>${content}</body>
-        </html>
-      `);
-      win.document.close();
-      win.print();
-    }
-  };
+   
+   const roomCharges = Number(
+     billingSummary?.roomCharges || selectedBooking?.paid_amount || 0
+   );
+
+   const taxRate = Number(billingSummary?.taxRate || 0);
+
+   const subtotal = roomCharges + serviceCharges;
+
+   const taxAmount = subtotal * (taxRate / 100);
+
+   const totalAmount = subtotal + taxAmount;
+  
 
   return (
     <div className="reception-dashboard-page">
@@ -349,64 +350,7 @@ const handleGuestCheckout = async (booking: any) => {
             </div>
           )}
 
-        {/* RECEIPT MODAL */}
-        {receiptBooking && (
-          <div className="receipt-modal">
-            <div className="receipt-content">
-              <div ref={receiptRef}>
-                <h2>Hotel Payment Receipt</h2>
-                <hr />
-
-                <div className="row">
-                  <span>Booking ID</span>
-                  <span>{receiptBooking.booking_id}</span>
-                </div>
-
-                <div className="row">
-                  <span>Guest</span>
-                  <span>
-                    {receiptBooking.first_name} {receiptBooking.last_name}
-                  </span>
-                </div>
-
-                <div className="row">
-                  <span>Email</span>
-                  <span>{receiptBooking.email}</span>
-                </div>
-
-                <div className="row">
-                  <span>Room ID</span>
-                  <span>{receiptBooking.room_id}</span>
-                </div>
-
-                <div className="row">
-                  <span>Nights</span>
-                  <span>{receiptBooking.nights}</span>
-                </div>
-
-                <div className="row">
-                  <span>Total Paid</span>
-                  <span>
-                    LKR {Number(receiptBooking.paid_amount || 0).toLocaleString()}
-                  </span>
-                </div>
-
-                <hr />
-                <p style={{ textAlign: 'center' }}>
-                  ✅ Payment Completed Successfully
-                </p>
-              </div>
-
-              <button onClick={printReceipt}>
-                <Printer /> Print Receipt
-              </button>
-
-              <button onClick={() => setReceiptBooking(null)}>
-                Close
-              </button>
-            </div>
-          </div>
-        )}
+        
 
 
 {showCheckoutModal && selectedBooking && (
@@ -417,6 +361,7 @@ const handleGuestCheckout = async (booking: any) => {
 
       {/* Guest Info */}
       <p><b>Guest:</b> {selectedBooking.first_name} {selectedBooking.last_name}</p>
+      <p><b>GuestID:</b> {selectedBooking.guest_id}</p>
       <p><b>Room ID:</b> {selectedBooking.room_id}</p>
       <p><b>Nights:</b> {selectedBooking.nights}</p>
 
@@ -426,31 +371,36 @@ const handleGuestCheckout = async (booking: any) => {
       {billingLoading && <p>Loading billing summary...</p>}
       {billingError && <p style={{ color: 'red' }}>Failed to load billing summary</p>}
 
-      {!billingLoading && !billingError && billingSummary && (
-        <>
-          <div className="row">
-            <span>Room Charges</span>
-            <span>LKR {Number(billingSummary.roomCharges).toLocaleString()}</span>
-          </div>
+      {!billingLoading && !billingError && (
+  <>
+    <div className="row">
+      <span>Room Charges</span>
+      <span>LKR {roomCharges.toLocaleString()}</span>
+    </div>
 
-          <div className="row">
-            <span>Service Charges</span>
-            <span>LKR {Number(billingSummary.serviceCharges || 0).toLocaleString()}</span>
-          </div>
+    <div className="row">
+      <span>Service Charges</span>
+      <span>LKR {serviceCharges.toLocaleString()}</span>
+    </div>
 
-          <div className="row">
-            <span>Tax</span>
-            <span>{billingSummary.taxRate}%</span>
-          </div>
+    <div className="row">
+      <span>Subtotal</span>
+      <span>LKR {subtotal.toLocaleString()}</span>
+    </div>
 
-          <hr />
+    <div className="row">
+      <span>Tax ({taxRate}%)</span>
+      <span>LKR {taxAmount.toLocaleString()}</span>
+    </div>
 
-          <div className="row total">
-            <b>Total</b>
-            <b>LKR {Number(billingSummary.total).toLocaleString()}</b>
-          </div>
-        </>
-      )}
+    <hr />
+
+    <div className="row total">
+      <b>Total</b>
+      <b>LKR {totalAmount.toLocaleString()}</b>
+    </div>
+  </>
+)}
 
       <div className="checkout-actions">
         <button
