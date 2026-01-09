@@ -10,6 +10,7 @@ import { createServiceRequest, fetchGuestServiceRequests } from '../redux/servic
 import { fetchServicesAsync } from '../redux/serviceSlice';
 import { checkActionThunk } from '../redux/checkincheckoutSlice';
 import { fetchBillingSummaryThunk } from '../redux/billingSlice';
+import { guestLogout } from '../redux/guestSlice';
 
 
 
@@ -408,7 +409,7 @@ const handleGuestCheckout = async (booking: any) => {
     navigate('/payment', {
       state: {
         bookingId: booking.booking_id,
-        amount: totalWithTax,
+        amount: Number(totalWithTax.toFixed(2)),
         paymentType: 'checkout' // pass checkout type to server
       }
     });
@@ -448,6 +449,17 @@ const handleGuestCheckout = async (booking: any) => {
           <button className={activeTab==='profile'?'active':''} onClick={()=>setActiveTab('profile')}>
             <Settings /><span className="nav-label">Profile</span>
           </button>
+
+          <button
+      className="logout-tab"
+      onClick={() => {
+        dispatch(guestLogout());  // Clear guest state
+        navigate('/guestauth')       // Redirect to login page
+      }}
+    >
+      <User /> {/* You can replace this with a logout icon if you have one */}
+      <span className="nav-label">Logout</span>
+    </button>
         </nav>
       </aside>
 
@@ -723,7 +735,7 @@ const handleGuestCheckout = async (booking: any) => {
         
         <h4 className="service-name">{s.name}</h4>
         <p className="service-desc">{s.branch_name}</p>
-        <p className="service-desc">{s.prices}</p>
+        <p className="service-desc">LKR {s.prices}</p>
         <button className="request-btn" onClick={() => openServiceModal(s.id)}>Request</button>
       </div>
     ))
@@ -744,6 +756,7 @@ const handleGuestCheckout = async (booking: any) => {
 {bookingStatus === 'succeeded' && guestBookings.map((b) => (
   <div key={b.booking_id} className="booking-card">
     <strong className='book-id'>{b.room_id}</strong> {/* replace with room name if available */}
+    <strong className='book-id'>Hotel {b.branch_name}</strong> {/* replace with room name if available */}
     <p>Status: {b.booking_status}</p>
     <p>Guests: {b.guests} | Nights: {b.nights}</p>
     <p>Amount: {b.paid_amount}</p>

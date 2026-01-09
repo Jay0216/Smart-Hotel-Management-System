@@ -11,7 +11,7 @@ interface Props {
 
 const StaffProtectedRoute: React.FC<Props> = ({ children }) => {
   const dispatch = useDispatch();
-  dispatch(staffLogout());
+  //dispatch(staffLogout());
   const { currentStaff, token } = useSelector((state: RootState) => state.staff);
 
   // Auto-logout if token expired

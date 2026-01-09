@@ -15,6 +15,7 @@ import type { BookingResponse } from '../API/bookingAPI';
 import { fetchGuestServiceRequests } from '../redux/serviceRequestSlice';
 import { fetchBillingSummaryThunk } from '../redux/billingSlice';
 import { useNavigate } from 'react-router-dom';
+import { receptionistLogout } from '../redux/receptionSlice';
 
 type Tab = 'dashboard' | 'checkin-checkout' | 'profile';
 
@@ -209,6 +210,17 @@ const { requests: guestServiceRequests, loading: serviceRequestsLoading, error: 
           >
             <User /> Profile
           </button>
+
+    <button
+      className="logout-tab"
+      onClick={() => {
+        dispatch(receptionistLogout());  // Clear guest state
+        navigate('/stafflogin');        // Redirect to login page
+      }}
+    >
+      <User /> {/* You can replace this with a logout icon if you have one */}
+      <span className="nav-label">Logout</span>
+    </button>
         </nav>
       </aside>
 

@@ -29,6 +29,9 @@ import {
 import { fetchAssignableStaffThunk } from '../redux/staffSlice';
 import { assignTaskThunk, fetchAssignedTasksThunk } from '../redux/staffTasksSlice';
 import { fetchOccupancy, fetchRevenue, fetchBookingTrends } from "../redux/dashboardSlice";
+import { adminLogout } from '../redux/adminSlice';
+import { useNavigate } from 'react-router-dom';
+
 
 
 
@@ -65,6 +68,7 @@ const AdminDashboard: React.FC = () => {
   const { services = [], loading: serviceLoading, error: serviceError } = useSelector((state: RootState) => state.services);
   
   const chartRef = useRef<any>(null);
+  const navigate = useNavigate()
 
   // Dummy chart data
   const { occupancy, revenue, bookingTrends, loading: dashboardLoading, error: dashboardError } = useSelector(
@@ -439,6 +443,17 @@ const [taskNotes, setTaskNotes] = useState('');
           <button className={activeTab==='staff'?'active':''} onClick={()=>setActiveTab('staff')}><User /><span className="nav-label">Staff</span></button>
           <button className={activeTab==='tasks'?'active':''} onClick={()=>setActiveTab('tasks')}><Settings /><span className="nav-label">Tasks</span></button>
           <button className={activeTab==='profile'?'active':''} onClick={()=>setActiveTab('profile')}><User /><span className="nav-label">Profile</span></button>
+
+          <button
+              className="logout-tab"
+              onClick={() => {
+              dispatch(adminLogout());  // Clear guest state
+              navigate('/adminauth');        // Redirect to login page
+          }}
+          >
+          <User /> {/* You can replace this with a logout icon if you have one */}
+          <span className="nav-label">Logout</span>
+        </button>
         </nav>
       </aside>
 

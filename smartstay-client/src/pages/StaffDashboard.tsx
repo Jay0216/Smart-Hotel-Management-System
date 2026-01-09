@@ -4,6 +4,8 @@ import './StaffDashboard.css';
 import type { RootState, AppDispatch } from '../redux/store';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchTasksByStaffThunk, updateTaskStatusThunk } from '../redux/staffTasksSlice';
+import { useNavigate, useNavigation } from 'react-router-dom';
+import { staffLogout } from '../redux/staffSlice';
 
 interface Task {
   id: string;
@@ -14,6 +16,7 @@ interface Task {
 
 const StaffDashboard: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate()
   const { currentStaff } = useSelector((state: RootState) => state.staff);
   const assignedTasks = useSelector((state: RootState) => state.staffTasks.tasks);
 
@@ -77,6 +80,17 @@ const StaffDashboard: React.FC = () => {
           <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>
             <User /><span>Profile</span>
           </button>
+
+          <button
+                className="logout-tab"
+                onClick={() => {
+                  dispatch(staffLogout());  // Clear guest state
+                  navigate('/stafflogin');        // Redirect to login page
+                }}
+              >
+                <User /> {/* You can replace this with a logout icon if you have one */}
+                <span className="nav-label">Logout</span>
+              </button>
         </nav>
       </aside>
 
