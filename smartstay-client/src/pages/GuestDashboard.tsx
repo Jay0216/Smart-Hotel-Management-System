@@ -252,8 +252,8 @@ const handleBookingSubmit = async () => {
       navigate('/payment', {
         state: {
           bookingId: bookingId,
-          amount,
-          currency: 'LKR',
+          balanceAmount: amount, // for email
+          fullAmount: amount,    // for DB
           paymentType: 'booking'
         }
       });
@@ -393,31 +393,61 @@ const { data: billingSummary, loading: billingLoading, error: billingError } = u
 
 const handleGuestCheckout = async (booking: any) => {
   try {
-    const completedServices = guestServiceRequests.filter(
-      (r) => r.status.toLowerCase() === 'completed'
-    );
+    const activeBookingId = String(booking.booking_id);
 
-    const roomAmount = Number(booking.paid_amount || 0);
-    const servicesAmount = completedServices
-      .map(s => Number(s.service_price || 0))
-      .reduce((a, b) => a + b, 0);
-    const taxRate = billingSummary?.taxRate || 0;
-    const totalAmount = roomAmount + servicesAmount;
-    const totalWithTax = totalAmount + (totalAmount * (taxRate / 100));
+    // Get room + service charges from billing summary or calculate
+    const roomCharges =
+      billingSummary && String(billingSummary.bookingId) === activeBookingId
+        ? Number(billingSummary.roomCharges)
+        : 0;
 
-    // Redirect to Payment page with total and specify paymentType = "checkout"
+    const serviceCharges =
+      billingSummary && String(billingSummary.bookingId) === activeBookingId
+        ? Number(billingSummary.serviceCharges)
+        : guestServiceRequests
+            .filter(
+              r =>
+                String(r.booking_id) === activeBookingId &&
+                r.status === 'completed'
+            )
+            .map(r => Number(r.service_price || 0))
+            .reduce((a, b) => a + b, 0);
+
+    const taxRate =
+      billingSummary && String(billingSummary.bookingId) === activeBookingId
+        ? Number(billingSummary.taxRate)
+        : 0;
+
+    // Total with tax
+    const subtotal = roomCharges + serviceCharges;
+    const totalWithTax = subtotal + subtotal * (taxRate / 100);
+
+    // Already paid amount
+    const alreadyPaid = Number(booking.paid_amount || 0);
+
+    // Remaining balance
+    const balanceAmount = Math.max(totalWithTax - alreadyPaid, 0);
+
+    
+
+    // Navigate to payment page with **both amounts**
     navigate('/payment', {
       state: {
-        bookingId: booking.booking_id,
-        amount: Number(totalWithTax.toFixed(2)),
-        paymentType: 'checkout' // pass checkout type to server
-      }
+        bookingId: activeBookingId,
+        balanceAmount: Number(balanceAmount.toFixed(2)), // shown to guest
+        fullAmount: Number(totalWithTax.toFixed(2)),     // sent to backend
+        paymentType: 'checkout',
+      },
     });
   } catch (error: any) {
     console.error('Checkout error:', error);
     alert(error?.message || 'Checkout failed');
   }
 };
+
+
+
+
 
 
 
@@ -619,9 +649,14 @@ const handleGuestCheckout = async (booking: any) => {
       (() => {
         // Normal billing values
         const roomCharges = Number(billingSummary.roomCharges);
-        const serviceCharges = guestServiceRequests
-          .map(r => Number(r.service_price) || 0)
-          .reduce((a, b) => a + b, 0);
+        const activeBookingId = billingSummary.bookingId; // add booking_id in API if needed
+
+        
+        const serviceCharges = Number(billingSummary.serviceCharges);
+
+
+
+
         const taxRate = Number(billingSummary.taxRate);
         const total =
           roomCharges + serviceCharges + (roomCharges + serviceCharges) * (taxRate / 100);

@@ -41,6 +41,7 @@ interface BackendServiceRequest {
   last_name?: string;
   guest_id?: string;
   branch_id?: number;
+  booking_id?: number;
   service_id?: number;
   branch_name?: string;
   service_price?: number;
@@ -57,6 +58,7 @@ export interface ServiceRequest {
   request_id: number;
   guest_id: string;
   branch_id: number;
+  booking_id: number; 
   service_id: number;
   service_name: string;
   request_note: string | null;
@@ -78,6 +80,7 @@ const transformServiceRequest = (
     request_id: backend.id,
     guest_id: backend.guest_id || '',
     branch_id: backend.branch_id || 0,
+    booking_id: backend.booking_id || 0,
     service_id: backend.service_id || 0,
     service_name: backend.service_name,
     request_note: backend.request_note,

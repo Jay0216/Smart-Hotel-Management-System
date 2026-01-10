@@ -9,7 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 const ReceptionistPaymentPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { bookingId, amount, receptionistId } = location.state || {};
+  const { bookingId, fullAmount, balanceAmount, receptionistId } = location.state || {};
 
   const [guestInfo, setGuestInfo] = useState({
     firstName: '',
@@ -66,7 +66,8 @@ const ReceptionistPaymentPage: React.FC = () => {
           guest_id: Number(currentGuest?.id),
           booking_id: Number(bookingId),
           receptionist_id: Number(receptionistId), // Assuming receptionist ID is 1 for this example
-          amount,
+          amount: Number(fullAmount),
+          paid_amount: Number(balanceAmount),
           payment_method: "CARD"
         })
       );
@@ -100,7 +101,7 @@ const ReceptionistPaymentPage: React.FC = () => {
         <div className="payment-container">
           <div className="amount-card">
             <div className="amount-label">Total Amount</div>
-            <div className="amount-value">LKR {amount?.toLocaleString()}</div>
+            <div className="amount-value">LKR {balanceAmount?.toLocaleString()}</div>
             <div className="amount-info">
               <FaCheckCircle className="check-icon" />
               <span>Booking ID: {bookingId}</span>
@@ -192,7 +193,7 @@ const ReceptionistPaymentPage: React.FC = () => {
             {error && <div className="error-message">{error}</div>}
 
             <button className={`pay-button ${!isFormValid() || loading ? 'disabled' : ''}`} onClick={handlePayment} disabled={!isFormValid() || loading}>
-              {loading ? "Processing Payment..." : `Pay LKR ${amount?.toLocaleString()}`}
+              {loading ? "Processing Payment..." : `Pay LKR ${balanceAmount?.toLocaleString()}`}
             </button>
           </form>
         </div>

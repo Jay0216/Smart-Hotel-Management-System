@@ -3,6 +3,7 @@ import { getBillingSummaryByGuestAPI } from '../API/billingAPI';
 
 export interface BillingState {
   data: {
+    bookingId: number; 
     branch: string;
     roomCharges: number;
     serviceCharges: number;

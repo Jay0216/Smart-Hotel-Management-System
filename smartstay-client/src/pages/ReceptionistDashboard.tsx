@@ -114,37 +114,55 @@ const {
 
 const handleGuestCheckout = async (booking: any) => {
   try {
-    // Fetch completed services for this guest
-    const completedServices = serviceRequests.filter(
-      (r) => r.status?.toLowerCase() === 'completed'
-    );
+    const activeBookingId = String(booking.booking_id);
 
-    const roomAmount = Number(booking.paid_amount || 0);
-    const servicesAmount = completedServices
-      .map(s => Number(s.service_price || 0))
-      .reduce((a, b) => a + b, 0);
-    const taxRate = billingSummary?.taxRate || 0;
+    const useBilling =
+      billingSummary && String(billingSummary.bookingId) === activeBookingId;
 
-    const subtotal = roomAmount + servicesAmount;
-    const totalWithTax = subtotal + (subtotal * (taxRate / 100));
+    // Total amount (full amount)
+    const fullAmount = useBilling
+      ? Number(billingSummary.total)
+      : (() => {
+          const completedServices = serviceRequests.filter(
+            (r) =>
+              String(r.booking_id) === activeBookingId &&
+              r.status?.toLowerCase() === 'completed'
+          );
 
-    // Prepare data to pass to payment page
-    
+          const roomAmount = Number(booking.room_charges || 0); // original room charge
+          const servicesAmount = completedServices
+            .map((s) => Number(s.service_price || 0))
+            .reduce((a, b) => a + b, 0);
 
-    // Redirect to payment page
+          const taxRate = billingSummary?.taxRate || 0;
+          const subtotal = roomAmount + servicesAmount;
+          const taxAmount = subtotal * (taxRate / 100);
+          return subtotal + taxAmount;
+        })();
+
+    // Already paid amount
+    const alreadyPaid = Number(booking.paid_amount || 0);
+
+    // Remaining balance
+    const balanceAmount = Math.max(fullAmount - alreadyPaid, 0);
+
+    // Navigate to receptionist payment page with **both amounts**
     navigate('/receptionistpayment', {
-        state: {
-          bookingId: booking.booking_id,
-          receptionistId: Number(currentReceptionist?.id),
-          amount: totalWithTax
-        }
-      });
-
+      state: {
+        bookingId: booking.booking_id,
+        receptionistId: Number(currentReceptionist?.id),
+        fullAmount: Number(fullAmount.toFixed(2)),   // DB storage
+        balanceAmount: Number(balanceAmount.toFixed(2)) // email/display
+      }
+    });
   } catch (error: any) {
     console.error('Checkout error:', error);
     window.alert(error?.message || 'Checkout failed');
   }
 };
+
+
+
 
 useEffect(() => {
   if (selectedBooking?.guest_id) {
@@ -379,40 +397,82 @@ const { requests: guestServiceRequests, loading: serviceRequestsLoading, error: 
 
       <hr />
 
-      {/* Billing Summary from backend */}
+      {/* Billing Summary */}
       {billingLoading && <p>Loading billing summary...</p>}
       {billingError && <p style={{ color: 'red' }}>Failed to load billing summary</p>}
 
       {!billingLoading && !billingError && (
-  <>
-    <div className="row">
-      <span>Room Charges</span>
-      <span>LKR {roomCharges.toLocaleString()}</span>
-    </div>
+        <>
+          {(() => {
+            const activeBookingId = String(selectedBooking.booking_id);
 
-    <div className="row">
-      <span>Service Charges</span>
-      <span>LKR {serviceCharges.toLocaleString()}</span>
-    </div>
+            // Room Charges
+            const roomCharges =
+              billingSummary && String(billingSummary.bookingId) === activeBookingId
+                ? Number(billingSummary.roomCharges)
+                : 0;
 
-    <div className="row">
-      <span>Subtotal</span>
-      <span>LKR {subtotal.toLocaleString()}</span>
-    </div>
+            // Service Charges
+            const serviceCharges =
+              billingSummary && String(billingSummary.bookingId) === activeBookingId
+                ? Number(billingSummary.serviceCharges)
+                : guestServiceRequests
+                    .filter(
+                      r =>
+                        String(r.booking_id) === activeBookingId &&
+                        r.status?.toLowerCase() === 'completed'
+                    )
+                    .map(r => Number(r.service_price || 0))
+                    .reduce((a, b) => a + b, 0);
 
-    <div className="row">
-      <span>Tax ({taxRate}%)</span>
-      <span>LKR {taxAmount.toLocaleString()}</span>
-    </div>
+            // Tax Rate
+            const taxRate =
+              billingSummary && String(billingSummary.bookingId) === activeBookingId
+                ? Number(billingSummary.taxRate)
+                : 0;
 
-    <hr />
+            // Total with tax
+            const subtotal = roomCharges + serviceCharges;
+            const taxAmount = billingSummary && String(billingSummary.bookingId) === activeBookingId
+              ? Number(billingSummary.taxAmount)
+              : subtotal * (taxRate / 100);
+            const totalAmount = billingSummary && String(billingSummary.bookingId) === activeBookingId
+              ? Number(billingSummary.total)
+              : subtotal + taxAmount;
 
-    <div className="row total">
-      <b>Total</b>
-      <b>LKR {totalAmount.toLocaleString()}</b>
-    </div>
-  </>
-)}
+            return (
+              <>
+                <div className="row">
+                  <span>Room Charges</span>
+                  <span>LKR {roomCharges.toLocaleString()}</span>
+                </div>
+
+                <div className="row">
+                  <span>Service Charges</span>
+                  <span>LKR {serviceCharges.toLocaleString()}</span>
+                </div>
+
+                <div className="row">
+                  <span>Subtotal</span>
+                  <span>LKR {subtotal.toLocaleString()}</span>
+                </div>
+
+                <div className="row">
+                  <span>Tax ({taxRate}%)</span>
+                  <span>LKR {taxAmount.toLocaleString()}</span>
+                </div>
+
+                <hr />
+
+                <div className="row total">
+                  <b>Total</b>
+                  <b>LKR {totalAmount.toLocaleString()}</b>
+                </div>
+              </>
+            );
+          })()}
+        </>
+      )}
 
       <div className="checkout-actions">
         <button
@@ -439,6 +499,8 @@ const { requests: guestServiceRequests, loading: serviceRequestsLoading, error: 
     </div>
   </div>
 )}
+
+
 
 
 

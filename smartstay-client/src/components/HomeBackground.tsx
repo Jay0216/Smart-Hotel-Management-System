@@ -44,7 +44,7 @@ const HomeBackground: React.FC = () => {
           />
           <FeatureCard
             icon={<Sparkles size={32} color="#2563eb" />}
-            title="Smart Experience"
+            title="Smart Experience (Coming Soon)"
             description="AI-powered systems for seamless bookings and management."
           />
         </div>
@@ -67,7 +67,7 @@ const HomeBackground: React.FC = () => {
           <div className="location-card">
             <MapPin size={42} />
             <p style={{ marginTop: "0.75rem", fontWeight: 600 }}>
-              Colombo • Kandy • Galle
+              Colombo • Kandy • Matara • Matale
             </p>
           </div>
         </div>

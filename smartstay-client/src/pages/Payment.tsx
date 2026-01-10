@@ -9,7 +9,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 const PaymentPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { bookingId, amount, paymentType } = location.state || {};
+  const { bookingId, balanceAmount, fullAmount, paymentType } = location.state || {};
+
+  console.log(balanceAmount)
 
   const [guestInfo, setGuestInfo] = useState({
     firstName: '',
@@ -63,11 +65,12 @@ const PaymentPage: React.FC = () => {
     try {
       const action = await dispatch(
         simulatePayment({
-          guest_id: Number(currentGuest?.id),
-          booking_id: Number(bookingId),
-          amount,
-          payment_method: "CARD",
-          paymentType // pass booking or checkout type
+         guest_id: Number(currentGuest?.id),
+         booking_id: Number(bookingId),
+         amount: Number(fullAmount),   // <-- send full total to backend
+         paid_amount: Number(balanceAmount), // <-- guest actually pays this
+         payment_method: "CARD",
+         paymentType
         })
       );
 
@@ -100,7 +103,7 @@ const PaymentPage: React.FC = () => {
         <div className="payment-container">
           <div className="amount-card">
             <div className="amount-label">Total Amount</div>
-            <div className="amount-value">LKR {amount?.toLocaleString()}</div>
+            <div className="amount-value">LKR {balanceAmount?.toLocaleString()}</div>
             <div className="amount-info">
               <FaCheckCircle className="check-icon" />
               <span>Booking ID: {bookingId}</span>
@@ -192,7 +195,7 @@ const PaymentPage: React.FC = () => {
             {error && <div className="error-message">{error}</div>}
 
             <button className={`pay-button ${!isFormValid() || loading ? 'disabled' : ''}`} onClick={handlePayment} disabled={!isFormValid() || loading}>
-              {loading ? "Processing Payment..." : `Pay LKR ${amount?.toLocaleString()}`}
+              {loading ? "Processing Payment..." : `Pay LKR ${balanceAmount?.toLocaleString()}`}
             </button>
           </form>
         </div>

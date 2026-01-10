@@ -3,6 +3,7 @@ export interface SimulatePaymentRequest {
   guest_id: number;
   booking_id: number;
   amount: number;
+  paid_amount: number;
   payment_method: "CARD" | "CASH" | "ONLINE";
   paymentType?: 'booking' | 'checkout';
 }
@@ -12,6 +13,7 @@ export interface SimulateReceptionistPaymentRequest {
   booking_id: number;
   receptionist_id: number;
   amount: number;
+  paid_amount: number;
   payment_method: "CARD" | "CASH" | "ONLINE";
 }
 

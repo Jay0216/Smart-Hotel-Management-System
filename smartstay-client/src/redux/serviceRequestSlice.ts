@@ -144,7 +144,7 @@ const serviceRequestSlice = createSlice({
         (state, action: PayloadAction<ServiceRequest>) => {
           state.loading = false;
           state.success = true;
-          state.requests.unshift(action.payload);
+          //state.requests.unshift(action.payload);
         }
       )
       .addCase(createServiceRequest.rejected, (state, action) => {
