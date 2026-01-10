@@ -18,6 +18,7 @@ export const getBillingSummaryByGuest = async (req, res) => {
     const total = subtotal + taxAmount;
 
     res.json({
+      bookingId: summary.booking_id, 
       branch: summary.branch_name,
       roomCharges: summary.room_paid_amount,
       serviceCharges: summary.service_total,

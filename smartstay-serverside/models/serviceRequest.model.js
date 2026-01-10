@@ -7,16 +7,17 @@ export const ServiceRequestModel = {
     guest_id,
     branch_id,
     service_id,
+    booking_id,
     request_note
   }) => {
     const query = `
       INSERT INTO service_requests
-        (guest_id, branch_id, service_id, request_note)
-      VALUES ($1, $2, $3, $4)
+        (guest_id, branch_id, service_id, booking_id, request_note)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *;
     `;
 
-    const values = [guest_id, branch_id, service_id, request_note];
+    const values = [guest_id, branch_id, service_id, booking_id, request_note];
 
     const { rows } = await pool.query(query, values);
     return rows[0];

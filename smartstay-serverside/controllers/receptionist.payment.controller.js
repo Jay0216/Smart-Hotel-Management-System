@@ -7,7 +7,7 @@ import { sendEmail } from "../utils/nodemailer.js"; // updated email utility
 
 export const simulateReceptionPayment = async (req, res) => {
   try {
-    const { guest_id, booking_id, amount, payment_method, receptionist_id } = req.body;
+    const { guest_id, booking_id, amount, paid_amount, payment_method, receptionist_id } = req.body;
 
     // 1️⃣ Check if a payment already exists for this booking
     const existingPayments = await PaymentModel.getPaymentsByBooking(booking_id, "checkout");
@@ -53,22 +53,13 @@ export const simulateReceptionPayment = async (req, res) => {
           receptionistId: receptionist_id
         });
 
-        const bookingPayments = await PaymentModel.getPaymentsByBooking(booking_id, "booking");
-
-        const paidBookingAmount = bookingPayments
-          ? bookingPayments.reduce((sum, p) => sum + Number(p.amount), 0)
-          : 0;
-
-        let emailAmount = amount - paidBookingAmount;
-        if (emailAmount < 0) emailAmount = 0;
-
         // ✅ Send checkout email (not booking email)
         const room = await getRoomById(updatedBooking.room_id);
         await sendEmail({
           to: updatedBooking.email,
           firstName: updatedBooking.first_name,
           bookingId: updatedBooking.booking_id,
-          amount: emailAmount,
+          amount: paid_amount,
           roomName: room ? room.room_name : "Room",
           type: "checkout"
         });

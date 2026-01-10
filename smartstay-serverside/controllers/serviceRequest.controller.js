@@ -29,10 +29,31 @@ export const createServiceRequest = async (req, res) => {
 
     const branch_id = branchResult.rows[0].id;
 
+    // Get the most recent active booking for this guest in this branch
+    const bookingResult = await pool.query(
+      `SELECT booking_id 
+       FROM bookings
+       WHERE guest_id = $1
+         AND branch_id = $2
+         AND booking_status != 'checked_out'
+       ORDER BY booking_id DESC
+       LIMIT 1`,
+      [guest_id, branch_id]
+    );
+
+    if (bookingResult.rowCount === 0) {
+      return res.status(400).json({ 
+        message: "No active booking found for this guest in this branch" 
+      });
+    }
+
+    const booking_id = bookingResult.rows[0].booking_id;
+
     const request = await ServiceRequestModel.createRequest({
       guest_id,
       branch_id,
       service_id,
+      booking_id,
       request_note
     });
 
